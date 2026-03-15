@@ -45,9 +45,12 @@ public class Invisible
         {
             if (!Util.IsPlayerValid(invis.Key)) continue;
 
-            var currentWeapon = invis.Key.PlayerPawn.Value.WeaponServices.ActiveWeapon.Get().As<CCSWeaponBase>();
-            if (currentWeapon.IsValid)
+            var activeWeapon = invis.Key.PlayerPawn.Value.WeaponServices.ActiveWeapon;
+
+            if (activeWeapon.IsValid)
             {
+                var currentWeapon = activeWeapon.Get().As<CCSWeaponBase>();
+
                 if (currentWeapon.InReload && !invis.Value.HackyReload)
                 {
                     var data = Globals.InvisiblePlayers[invis.Key];

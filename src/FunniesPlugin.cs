@@ -1,4 +1,3 @@
-using System;
 using System.Text.Json.Serialization;
 using CounterStrikeSharp.API.Core;
 using Funnies.Commands;
@@ -6,9 +5,6 @@ using Funnies.Modules;
 
 namespace Funnies;
 
-// ---------------------------
-// Plugin Configuration
-// ---------------------------
 public class FunniesConfig : BasePluginConfig
 {
     [JsonPropertyName("ColorR")]
@@ -33,9 +29,6 @@ public class FunniesConfig : BasePluginConfig
     public bool InvisibleEnabled { get; set; } = true;
 }
 
-// ---------------------------
-// Main Plugin Class
-// ---------------------------
 public class FunniesPlugin : BasePlugin, IPluginConfig<FunniesConfig>
 {
     public override string ModuleName => "Funny plugin";
@@ -45,17 +38,13 @@ public class FunniesPlugin : BasePlugin, IPluginConfig<FunniesConfig>
 
     public override void Load(bool hotReload)
     {
-        Console.WriteLine("So funny :)");
-
         Globals.Plugin = this;
 
-        // Register listeners
         RegisterListener<Listeners.CheckTransmit>(OnCheckTransmit);
 
         if (Config.InvisibleEnabled)
             RegisterListener<Listeners.OnTick>(OnTick);
 
-        // Add commands
         AddCommand("css_money", "Gives a player money", CommandMoney.OnMoneyCommand);
         AddCommand("css_rcon", "Runs a command", CommandRcon.OnRconCommand);
 
@@ -80,20 +69,14 @@ public class FunniesPlugin : BasePlugin, IPluginConfig<FunniesConfig>
             if (Config.WallhackEnabled)
                 Wallhack.Cleanup();
         }
-        else
-        {
-            Console.WriteLine($"Reloading: hotReload? {hotReload}");
-        }
     }
 
-    // Called every server tick
     public void OnTick()
     {
         if (Config.InvisibleEnabled)
             Invisible.OnTick();
     }
 
-    // Called when server checks what entities to transmit to each player
     public void OnCheckTransmit(CCheckTransmitInfoList infoList)
     {
         foreach ((CCheckTransmitInfo info, CCSPlayerController? player) in infoList)
@@ -109,7 +92,6 @@ public class FunniesPlugin : BasePlugin, IPluginConfig<FunniesConfig>
         }
     }
 
-    // Called when the config is loaded or parsed
     public void OnConfigParsed(FunniesConfig config)
     {
         Config = config;

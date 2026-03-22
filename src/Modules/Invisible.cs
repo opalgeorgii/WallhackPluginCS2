@@ -14,7 +14,6 @@ public class Invisible
 
     public static void OnPlayerTransmit(CCheckTransmitInfo info, CCSPlayerController player)
     {
-        // TODO: Should store these but dont know a good way :/
         var gameRules = Utilities.FindAllEntitiesByDesignerName<CCSGameRulesProxy>("cs_gamerules").First();
 
         foreach (var entity in _entities)
@@ -145,15 +144,6 @@ public class Invisible
         return HookResult.Continue;
     }
 
-    /*public static HookResult OnPlayerReload(EventWeaponReload @event, GameEventInfo info)
-    {
-        var data = Globals.InvisiblePlayers[@event.Userid];
-        data.HackyReload = true;
-        SetPlayerInvisibleFor(@event.Userid, 1.5f);
-
-        return HookResult.Continue;
-    }*/
-
     public static HookResult OnPlayerHurt(EventPlayerHurt @event, GameEventInfo info)
     {
         SetPlayerInvisibleFor(@event.Userid, 0.5f);
@@ -175,11 +165,9 @@ public class Invisible
     public static void Setup()
     {
         Globals.Plugin.RegisterEventHandler<EventBombBeginplant>(OnPlayerStartPlant);
-        // EventPlayerShoot doesnt work so we use EventBulletImpact
         Globals.Plugin.RegisterEventHandler<EventBulletImpact>(OnPlayerShoot);
         Globals.Plugin.RegisterEventHandler<EventPlayerSound>(OnPlayerSound);
         Globals.Plugin.RegisterEventHandler<EventBombBegindefuse>(OnPlayerStartDefuse);
-        // Globals.Plugin.RegisterEventHandler<EventWeaponReload>(OnPlayerReload);
         Globals.Plugin.RegisterEventHandler<EventPlayerHurt>(OnPlayerHurt);
 
         Globals.Plugin.AddCommand("css_invisible", "Makes a player invisible", CommandInvisible.OnInvisibleCommand);

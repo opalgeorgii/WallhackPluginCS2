@@ -19,7 +19,6 @@ public class Wallhack
             if (!Util.IsPlayerValid(target))
                 continue;
 
-            // 🔥 HARD BLOCK FIRST (before any logic)
             if (target == player)
             {
                 info.TransmitEntities.Remove(data.ModelRelay);
@@ -58,8 +57,6 @@ public class Wallhack
 
         RemoveGlow(player);
 
-        Console.WriteLine($"[WH DEBUG] Scheduling Glow for {player.PlayerName}");
-
         Globals.Plugin.AddTimer(0.3f, () =>
         {
             if (!Util.IsPlayerValid(player)) return;
@@ -67,7 +64,6 @@ public class Wallhack
             var pawn = player.PlayerPawn?.Value;
             if (pawn == null || !pawn.IsValid) return;
 
-            // ✅ correct place for alive check
             if (!player.PawnIsAlive) return;
 
             Glow(player);
@@ -96,7 +92,6 @@ public class Wallhack
         if (!Util.IsPlayerValid(player))
             return HookResult.Continue;
 
-        // ✅ FULL CLEANUP
         RemoveGlow(player);
 
         return HookResult.Continue;
@@ -119,35 +114,22 @@ public class Wallhack
     private static void Glow(CCSPlayerController player)
     {
         if (Globals.Wallhackers.Contains(player))
-        {
-            // don't create glow for wallhack user
             return;
-        }
 
         if (Globals.GlowData.ContainsKey(player))
-        {
-            Console.WriteLine("[WH DEBUG] Glow already exists (blocked duplicate)");
             return;
-        }
 
         if (!Util.IsPlayerValid(player) || player.PlayerPawn == null || !player.PlayerPawn.IsValid)
-        {
-            Console.WriteLine("[WH DEBUG] Glow() aborted - invalid pawn");
             return;
-        }
 
-        // ✅ GET MODEL FIRST (CRITICAL)
         string model = player.PlayerPawn?.Value?.CBodyComponent?.SceneNode?
             .GetSkeletonInstance().ModelState.ModelName ?? "";
 
         if (string.IsNullOrEmpty(model))
         {
-            Console.WriteLine("[WH DEBUG] Model NOT ready, retrying...");
             Globals.Plugin.AddTimer(0.1f, () => Glow(player));
             return;
         }
-
-        Console.WriteLine($"[WH] Creating glow for {player.PlayerName}");
 
         var glowEntity = Utilities.CreateEntityByName<CDynamicProp>("prop_dynamic");
         var modelRelay = Utilities.CreateEntityByName<CDynamicProp>("prop_dynamic");
@@ -155,7 +137,6 @@ public class Wallhack
         if (glowEntity == null || modelRelay == null)
             return;
 
-        // ✅ SET MODEL BEFORE SPAWN
         modelRelay.Spawnflags = 256;
         modelRelay.Render = Color.Transparent;
         modelRelay.RenderMode = RenderMode_t.kRenderNone;
@@ -165,11 +146,9 @@ public class Wallhack
         glowEntity.Render = Color.FromArgb(1, 0, 0, 0);
         glowEntity.SetModel(model);
 
-        // ✅ NOW SPAWN (correct order)
         modelRelay.DispatchSpawn();
         glowEntity.DispatchSpawn();
 
-        // glow settings
         glowEntity.Glow.GlowRange = 5000;
         glowEntity.Glow.GlowRangeMin = 0;
         glowEntity.Glow.GlowColorOverride = Color.FromArgb(255, Globals.Config.R, Globals.Config.G, Globals.Config.B);
@@ -181,7 +160,6 @@ public class Wallhack
         if (pawn == null || !pawn.IsValid)
             return;
 
-        // follow safely
         Server.NextWorldUpdate(() =>
         {
             if (!modelRelay.IsValid || !glowEntity.IsValid) return;

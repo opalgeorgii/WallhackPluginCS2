@@ -1,27 +1,47 @@
-﻿using System.Text.Json.Serialization;
+using System;
+using System.Text.Json.Serialization;
 using CounterStrikeSharp.API.Core;
 using Funnies.Commands;
 using Funnies.Modules;
 
 namespace Funnies;
 
+// ---------------------------
+// Plugin Configuration
+// ---------------------------
 public class FunniesConfig : BasePluginConfig
 {
-    [JsonPropertyName("ColorR")] public byte R { get; set; } = 171;
-    [JsonPropertyName("ColorG")] public byte G { get; set; } = 75;
-    [JsonPropertyName("ColorB")] public byte B { get; set; } = 209;
-    [JsonPropertyName("CommandPermission")] public string AdminPermission { get; set; } = "@css/generic";
-    [JsonPropertyName("RconPermission")] public string RconPermission { get; set; } = "@css/rcon";
-    [JsonPropertyName("WallhackEnabled")] public bool WallhackEnabled { get; set; } = true;
-    [JsonPropertyName("InvisibileEnabled")] public bool InvisibileEnabled { get; set; } = true;
+    [JsonPropertyName("ColorR")]
+    public byte R { get; set; } = 171;
+
+    [JsonPropertyName("ColorG")]
+    public byte G { get; set; } = 75;
+
+    [JsonPropertyName("ColorB")]
+    public byte B { get; set; } = 209;
+
+    [JsonPropertyName("CommandPermission")]
+    public string AdminPermission { get; set; } = "@css/generic";
+
+    [JsonPropertyName("RconPermission")]
+    public string RconPermission { get; set; } = "@css/rcon";
+
+    [JsonPropertyName("WallhackEnabled")]
+    public bool WallhackEnabled { get; set; } = true;
+
+    [JsonPropertyName("InvisibleEnabled")]
+    public bool InvisibleEnabled { get; set; } = true;
 }
- 
+
+// ---------------------------
+// Main Plugin Class
+// ---------------------------
 public class FunniesPlugin : BasePlugin, IPluginConfig<FunniesConfig>
 {
     public override string ModuleName => "Funny plugin";
     public override string ModuleVersion => "0.0.1";
 
-    public FunniesConfig Config { get; set; }
+    public FunniesConfig Config { get; set; } = new();
 
     public override void Load(bool hotReload)
     {
@@ -29,46 +49,51 @@ public class FunniesPlugin : BasePlugin, IPluginConfig<FunniesConfig>
 
         Globals.Plugin = this;
 
+        // Register listeners
         RegisterListener<Listeners.CheckTransmit>(OnCheckTransmit);
 
-        if (Config.InvisibileEnabled)
+        if (Config.InvisibleEnabled)
             RegisterListener<Listeners.OnTick>(OnTick);
 
+        // Add commands
         AddCommand("css_money", "Gives a player money", CommandMoney.OnMoneyCommand);
         AddCommand("css_rcon", "Runs a command", CommandRcon.OnRconCommand);
 
-        #if DEBUG
+#if DEBUG
         AddCommand("css_debug", "Debug command", CommandDebug.OnDebugCommand);
-        #endif
+#endif
 
-        if (Config.InvisibileEnabled)
+        if (Config.InvisibleEnabled)
             Invisible.Setup();
-        
+
         if (Config.WallhackEnabled)
             Wallhack.Setup();
     }
 
     public override void Unload(bool hotReload)
     {
-        #if DEBUG
         if (hotReload)
         {
-            if (Config.InvisibileEnabled)
+            if (Config.InvisibleEnabled)
                 Invisible.Cleanup();
-            
+
             if (Config.WallhackEnabled)
                 Wallhack.Cleanup();
         }
-        #else
-        Console.WriteLine($"Reloading: hotReload? {hotReload}");
-        #endif
+        else
+        {
+            Console.WriteLine($"Reloading: hotReload? {hotReload}");
+        }
     }
 
+    // Called every server tick
     public void OnTick()
     {
-        Invisible.OnTick();
+        if (Config.InvisibleEnabled)
+            Invisible.OnTick();
     }
 
+    // Called when server checks what entities to transmit to each player
     public void OnCheckTransmit(CCheckTransmitInfoList infoList)
     {
         foreach ((CCheckTransmitInfo info, CCSPlayerController? player) in infoList)
@@ -79,11 +104,12 @@ public class FunniesPlugin : BasePlugin, IPluginConfig<FunniesConfig>
             if (Config.WallhackEnabled)
                 Wallhack.OnPlayerTransmit(info, player!);
 
-            if (Config.InvisibileEnabled)
+            if (Config.InvisibleEnabled)
                 Invisible.OnPlayerTransmit(info, player!);
         }
     }
 
+    // Called when the config is loaded or parsed
     public void OnConfigParsed(FunniesConfig config)
     {
         Config = config;

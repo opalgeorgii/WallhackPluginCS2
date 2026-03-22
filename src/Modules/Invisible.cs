@@ -45,21 +45,35 @@ public class Invisible
         {
             if (!Util.IsPlayerValid(invis.Key)) continue;
 
-            var activeWeapon = invis.Key.PlayerPawn.Value.WeaponServices.ActiveWeapon;
+            var playerPawn = invis.Key.PlayerPawn!;
+            var pawn = playerPawn.Value;
+            if (pawn == null || !pawn.IsValid) continue;
 
-            if (activeWeapon.IsValid)
+            var weaponServices = pawn.WeaponServices;
+            if (weaponServices != null)
             {
-                var currentWeapon = activeWeapon.Get().As<CCSWeaponBase>();
-
-                if (currentWeapon.InReload && !invis.Value.HackyReload)
+                var activeWeapon = weaponServices.ActiveWeapon;
+                if (activeWeapon.IsValid)
                 {
-                    var data = Globals.InvisiblePlayers[invis.Key];
-                    data.HackyReload = true;
-                    Globals.InvisiblePlayers[invis.Key] = data;
-                    SetPlayerInvisibleFor(invis.Key, currentWeapon.VData.DisallowAttackAfterReloadStartDuration);
+                    var weaponInstance = activeWeapon.Get();
+                    if (weaponInstance != null)
+                    {
+                        var currentWeapon = weaponInstance.As<CCSWeaponBase>();
+                        if (currentWeapon != null && currentWeapon.IsValid)
+                        {
+                            var vData = currentWeapon.VData;
+                            if (vData != null && currentWeapon.InReload && !invis.Value.HackyReload)
+                            {
+                                var data = Globals.InvisiblePlayers[invis.Key];
+                                data.HackyReload = true;
+                                Globals.InvisiblePlayers[invis.Key] = data;
+                                SetPlayerInvisibleFor(invis.Key, vData.DisallowAttackAfterReloadStartDuration);
+                            }
+                        }
+                    }
                 }
             }
-            
+
             var alpha = 255f;
 
             var half = Server.CurrentTime + ((invis.Value.StartTime - Server.CurrentTime) / 2);
@@ -67,7 +81,6 @@ public class Invisible
                 alpha = invis.Value.EndTime < Server.CurrentTime ? 0 : Util.Map(Server.CurrentTime, half, invis.Value.EndTime, 255, 0);
 
             var progress = (int)Util.Map(alpha, 0, 255, 0, 20);
-            var pawn = invis.Key.PlayerPawn.Value;
 
             if (alpha == 0)
             {
@@ -148,7 +161,7 @@ public class Invisible
         return HookResult.Continue;
     }
 
-    private static void SetPlayerInvisibleFor(CCSPlayerController player, float time)
+    private static void SetPlayerInvisibleFor(CCSPlayerController? player, float time)
     {
         if (!Util.IsPlayerValid(player)) return;
         if (!Globals.InvisiblePlayers.TryGetValue(player, out var data)) return;

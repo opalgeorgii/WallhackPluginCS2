@@ -4,6 +4,6 @@ namespace Funnies.Models;
 
 public class GlowData
 {
-    public CDynamicProp GlowEnt;
-    public CDynamicProp ModelRelay;
+    public required CDynamicProp GlowEnt;
+    public required CDynamicProp ModelRelay;
 }

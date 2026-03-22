@@ -19,14 +19,13 @@ public class Wallhack
             if (!Util.IsPlayerValid(target))
                 continue;
 
-            if (target == player)
-            {
-                info.TransmitEntities.Remove(data.ModelRelay);
-                info.TransmitEntities.Remove(data.GlowEnt);
+            if (!data.GlowEnt.IsValid || !data.ModelRelay.IsValid)
                 continue;
-            }
+
+            bool isSelf = target == player;
 
             bool shouldSee =
+                !isSelf &&
                 Globals.Wallhackers.Contains(player) &&
                 target.Team != player.Team &&
                 player.Team != CsTeam.Spectator &&
@@ -60,10 +59,6 @@ public class Wallhack
         Globals.Plugin.AddTimer(0.3f, () =>
         {
             if (!Util.IsPlayerValid(player)) return;
-
-            var pawn = player.PlayerPawn?.Value;
-            if (pawn == null || !pawn.IsValid) return;
-
             if (!player.PawnIsAlive) return;
 
             Glow(player);
@@ -113,23 +108,17 @@ public class Wallhack
 
     private static void Glow(CCSPlayerController player)
     {
-        if (Globals.Wallhackers.Contains(player))
+        if (!Util.IsPlayerValid(player) || player.PlayerPawn == null || !player.PlayerPawn.IsValid)
             return;
 
         if (Globals.GlowData.ContainsKey(player))
-            return;
-
-        if (!Util.IsPlayerValid(player) || player.PlayerPawn == null || !player.PlayerPawn.IsValid)
             return;
 
         string model = player.PlayerPawn?.Value?.CBodyComponent?.SceneNode?
             .GetSkeletonInstance().ModelState.ModelName ?? "";
 
         if (string.IsNullOrEmpty(model))
-        {
-            Globals.Plugin.AddTimer(0.1f, () => Glow(player));
             return;
-        }
 
         var glowEntity = Utilities.CreateEntityByName<CDynamicProp>("prop_dynamic");
         var modelRelay = Utilities.CreateEntityByName<CDynamicProp>("prop_dynamic");
@@ -140,40 +129,43 @@ public class Wallhack
         modelRelay.Spawnflags = 256;
         modelRelay.Render = Color.Transparent;
         modelRelay.RenderMode = RenderMode_t.kRenderNone;
-        modelRelay.SetModel(model);
 
         glowEntity.Spawnflags = 256;
         glowEntity.Render = Color.FromArgb(1, 0, 0, 0);
-        glowEntity.SetModel(model);
 
+        // Spawn FIRST (no model yet)
         modelRelay.DispatchSpawn();
         glowEntity.DispatchSpawn();
 
-        glowEntity.Glow.GlowRange = 5000;
-        glowEntity.Glow.GlowRangeMin = 0;
-        glowEntity.Glow.GlowColorOverride = Color.FromArgb(255, Globals.Config.R, Globals.Config.G, Globals.Config.B);
-        glowEntity.Glow.GlowTeam = -1;
-        glowEntity.Glow.GlowType = 3;
-
-        var pawn = player.PlayerPawn!.Value;
-
-        if (pawn == null || !pawn.IsValid)
-            return;
-
+        // Delay model setup to avoid engine asserts
         Server.NextWorldUpdate(() =>
         {
-            if (!modelRelay.IsValid || !glowEntity.IsValid) return;
-            if (!pawn.IsValid) return;
+            if (!modelRelay.IsValid || !glowEntity.IsValid)
+                return;
+
+            modelRelay.SetModel(model);
+            glowEntity.SetModel(model);
+
+            var pawn = player.PlayerPawn!.Value;
+            if (pawn == null || !pawn.IsValid)
+                return;
 
             modelRelay.AcceptInput("FollowEntity", pawn, null, "!activator");
             glowEntity.AcceptInput("FollowEntity", modelRelay, null, "!activator");
-        });
 
-        Globals.GlowData[player] = new GlowData
-        {
-            GlowEnt = glowEntity,
-            ModelRelay = modelRelay
-        };
+            glowEntity.Glow.GlowRange = 5000;
+            glowEntity.Glow.GlowRangeMin = 0;
+            glowEntity.Glow.GlowColorOverride =
+                Color.FromArgb(255, Globals.Config.R, Globals.Config.G, Globals.Config.B);
+            glowEntity.Glow.GlowTeam = -1;
+            glowEntity.Glow.GlowType = 3;
+
+            Globals.GlowData[player] = new GlowData
+            {
+                GlowEnt = glowEntity,
+                ModelRelay = modelRelay
+            };
+        });
     }
 
     public static void Setup()

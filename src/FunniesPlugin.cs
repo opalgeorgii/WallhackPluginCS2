@@ -81,8 +81,7 @@ public class FunniesPlugin : BasePlugin, IPluginConfig<FunniesConfig>
     {
         foreach ((CCheckTransmitInfo info, CCSPlayerController? player) in infoList)
         {
-            if (!Util.IsPlayerValid(player))
-                continue;
+            if (!Util.IsPlayerValid(player)) continue;
 
             if (Config.WallhackEnabled)
                 Wallhack.OnPlayerTransmit(info, player!);

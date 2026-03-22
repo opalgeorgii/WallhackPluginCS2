@@ -22,10 +22,15 @@ public class Wallhack
             if (!data.GlowEnt.IsValid || !data.ModelRelay.IsValid)
                 continue;
 
-            bool isSelf = target == player;
+            // 🚫 NEVER show yourself
+            if (target == player)
+            {
+                info.TransmitEntities.Remove(data.ModelRelay);
+                info.TransmitEntities.Remove(data.GlowEnt);
+                continue;
+            }
 
             bool shouldSee =
-                !isSelf &&
                 Globals.Wallhackers.Contains(player) &&
                 target.Team != player.Team &&
                 player.Team != CsTeam.Spectator &&
@@ -56,7 +61,7 @@ public class Wallhack
 
         RemoveGlow(player);
 
-        Globals.Plugin.AddTimer(0.3f, () =>
+        Globals.Plugin.AddTimer(0.2f, () =>
         {
             if (!Util.IsPlayerValid(player)) return;
             if (!player.PawnIsAlive) return;
@@ -126,6 +131,10 @@ public class Wallhack
         if (glowEntity == null || modelRelay == null)
             return;
 
+        // ✅ SET MODEL BEFORE SPAWN (fixes console spam)
+        glowEntity.SetModel(model);
+        modelRelay.SetModel(model);
+
         modelRelay.Spawnflags = 256;
         modelRelay.Render = Color.Transparent;
         modelRelay.RenderMode = RenderMode_t.kRenderNone;
@@ -133,39 +142,29 @@ public class Wallhack
         glowEntity.Spawnflags = 256;
         glowEntity.Render = Color.FromArgb(1, 0, 0, 0);
 
-        // Spawn FIRST (no model yet)
+        // ✅ NOW spawn (safe)
         modelRelay.DispatchSpawn();
         glowEntity.DispatchSpawn();
 
-        // Delay model setup to avoid engine asserts
-        Server.NextWorldUpdate(() =>
+        var pawn = player.PlayerPawn!.Value;
+        if (pawn == null || !pawn.IsValid)
+            return;
+
+        modelRelay.AcceptInput("FollowEntity", pawn, null, "!activator");
+        glowEntity.AcceptInput("FollowEntity", modelRelay, null, "!activator");
+
+        glowEntity.Glow.GlowRange = 5000;
+        glowEntity.Glow.GlowRangeMin = 0;
+        glowEntity.Glow.GlowColorOverride =
+            Color.FromArgb(255, Globals.Config.R, Globals.Config.G, Globals.Config.B);
+        glowEntity.Glow.GlowTeam = -1;
+        glowEntity.Glow.GlowType = 3;
+
+        Globals.GlowData[player] = new GlowData
         {
-            if (!modelRelay.IsValid || !glowEntity.IsValid)
-                return;
-
-            modelRelay.SetModel(model);
-            glowEntity.SetModel(model);
-
-            var pawn = player.PlayerPawn!.Value;
-            if (pawn == null || !pawn.IsValid)
-                return;
-
-            modelRelay.AcceptInput("FollowEntity", pawn, null, "!activator");
-            glowEntity.AcceptInput("FollowEntity", modelRelay, null, "!activator");
-
-            glowEntity.Glow.GlowRange = 5000;
-            glowEntity.Glow.GlowRangeMin = 0;
-            glowEntity.Glow.GlowColorOverride =
-                Color.FromArgb(255, Globals.Config.R, Globals.Config.G, Globals.Config.B);
-            glowEntity.Glow.GlowTeam = -1;
-            glowEntity.Glow.GlowType = 3;
-
-            Globals.GlowData[player] = new GlowData
-            {
-                GlowEnt = glowEntity,
-                ModelRelay = modelRelay
-            };
-        });
+            GlowEnt = glowEntity,
+            ModelRelay = modelRelay
+        };
     }
 
     public static void Setup()
@@ -182,14 +181,11 @@ public class Wallhack
     {
         foreach (var entity in Globals.GlowData)
         {
-            Server.NextWorldUpdate(() =>
-            {
-                if (entity.Value.GlowEnt.IsValid)
-                    entity.Value.GlowEnt.Remove();
+            if (entity.Value.GlowEnt.IsValid)
+                entity.Value.GlowEnt.Remove();
 
-                if (entity.Value.ModelRelay.IsValid)
-                    entity.Value.ModelRelay.Remove();
-            });
+            if (entity.Value.ModelRelay.IsValid)
+                entity.Value.ModelRelay.Remove();
         }
 
         Globals.GlowData.Clear();

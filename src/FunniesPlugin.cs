@@ -48,10 +48,6 @@ public class FunniesPlugin : BasePlugin, IPluginConfig<FunniesConfig>
         AddCommand("css_money", "Gives a player money", CommandMoney.OnMoneyCommand);
         AddCommand("css_rcon", "Runs a command", CommandRcon.OnRconCommand);
 
-#if DEBUG
-        AddCommand("css_debug", "Debug command", CommandDebug.OnDebugCommand);
-#endif
-
         if (Config.InvisibleEnabled)
             Invisible.Setup();
 

@@ -29,11 +29,20 @@ public class Wallhack
                 continue;
             }
 
+            bool isInvisible = Globals.InvisiblePlayers.ContainsKey(target);
+
+            bool isRevealed = false;
+            if (isInvisible && Globals.InvisiblePlayers.TryGetValue(target, out var invisData))
+            {
+                isRevealed = Server.CurrentTime <= invisData.RevealUntil;
+            }
+
             bool shouldSee =
                 Globals.Wallhackers.Contains(player) &&
                 target.Team != player.Team &&
                 player.Team != CsTeam.Spectator &&
-                target.Team != CsTeam.Spectator;
+                target.Team != CsTeam.Spectator &&
+                (!isInvisible || isRevealed);
 
             if (shouldSee)
             {
@@ -42,6 +51,7 @@ public class Wallhack
             }
             else
             {
+                // 🔥 THIS FIXES STUCK GLOW
                 info.TransmitEntities.Remove(data.ModelRelay);
                 info.TransmitEntities.Remove(data.GlowEnt);
             }
@@ -57,7 +67,6 @@ public class Wallhack
 
         RemoveGlow(player);
 
-        // Delay 0.5s to ensure model is fully loaded
         Globals.Plugin.AddTimer(0.5f, () =>
         {
             if (!Util.IsPlayerValid(player)) return;
@@ -142,7 +151,6 @@ public class Wallhack
         modelRelay.DispatchSpawn();
         glowEntity.DispatchSpawn();
 
-        // Delay linking to avoid staging issues
         Globals.Plugin.AddTimer(0.05f, () =>
         {
             if (!pawn.IsValid) return;

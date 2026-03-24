@@ -12,7 +12,6 @@ namespace Funnies.Modules;
 
 public class Invisible
 {
-    // Track entity → owner
     private static Dictionary<CEntityInstance, CCSPlayerController> _entities = new();
 
     public static void OnPlayerTransmit(CCheckTransmitInfo info, CCSPlayerController player)
@@ -20,13 +19,11 @@ public class Invisible
         var gameRules = Utilities.FindAllEntitiesByDesignerName<CCSGameRulesProxy>("cs_gamerules").FirstOrDefault();
         if (gameRules == null) return;
 
-        // Hide entities ONLY if they belong to invisible players
         foreach (var (entity, owner) in _entities)
         {
             if (!Util.IsPlayerValid(owner))
                 continue;
 
-            // Hide from everyone except owner
             if (owner != player)
                 info.TransmitEntities.Remove(entity);
         }
@@ -57,7 +54,6 @@ public class Invisible
 
             var weaponServices = pawn.WeaponServices;
 
-            // Reload handling (unchanged)
             if (weaponServices != null)
             {
                 var activeWeapon = weaponServices.ActiveWeapon;
@@ -82,11 +78,13 @@ public class Invisible
                 }
             }
 
-            // Alpha calculation
             float alpha = 255f;
             var half = Server.CurrentTime + ((invis.Value.StartTime - Server.CurrentTime) / 2);
+
             if (half < Server.CurrentTime)
-                alpha = invis.Value.EndTime < Server.CurrentTime ? 0 : Util.Map(Server.CurrentTime, half, invis.Value.EndTime, 255, 0);
+                alpha = invis.Value.EndTime < Server.CurrentTime
+                    ? 0
+                    : Util.Map(Server.CurrentTime, half, invis.Value.EndTime, 255, 0);
 
             int progress = (int)Util.Map(alpha, 0, 255, 0, 20);
 
@@ -95,14 +93,12 @@ public class Invisible
                 string.Concat(Enumerable.Repeat("&#9617;", 20 - progress))
             );
 
-            // Apply render
             pawn.Render = Color.FromArgb((int)alpha, pawn.Render);
             Utilities.SetStateChanged(pawn, "CBaseModelEntity", "m_clrRender");
 
             pawn.ShadowStrength = alpha < 128f ? 1.0f : 0.0f;
             Utilities.SetStateChanged(pawn, "CBaseModelEntity", "m_flShadowStrength");
 
-            // Apply to weapons
             foreach (var weapon in pawn.WeaponServices!.MyWeapons)
             {
                 var w = weapon.Value!;
@@ -114,7 +110,6 @@ public class Invisible
                 Utilities.SetStateChanged(w, "CBaseModelEntity", "m_flShadowStrength");
             }
 
-            // 🔥 ONLY hide when fully invisible
             if (alpha == 0)
             {
                 pawn.EntitySpottedState.Spotted = false;
@@ -123,9 +118,7 @@ public class Invisible
                 _entities[pawn] = invis.Key;
 
                 foreach (var weapon in pawn.WeaponServices!.MyWeapons)
-                {
                     _entities[weapon.Value!] = invis.Key;
-                }
 
                 var data = Globals.InvisiblePlayers[invis.Key];
                 data.HackyReload = false;
@@ -136,13 +129,35 @@ public class Invisible
 
     public static HookResult OnPlayerSound(EventPlayerSound @event, GameEventInfo info)
     {
-        SetPlayerInvisibleFor(@event.Userid, @event.Duration * 2);
+        var player = @event.Userid;
+        if (!Util.IsPlayerValid(player))
+            return HookResult.Continue;
+
+        SetPlayerInvisibleFor(player, @event.Duration * 2);
+
+        if (Globals.InvisiblePlayers.TryGetValue(player!, out var data))
+        {
+            data.RevealUntil = Server.CurrentTime + 2.0f;
+            Globals.InvisiblePlayers[player!] = data;
+        }
+
         return HookResult.Continue;
     }
 
     public static HookResult OnPlayerShoot(EventBulletImpact @event, GameEventInfo info)
     {
-        SetPlayerInvisibleFor(@event.Userid, 0.5f);
+        var player = @event.Userid;
+        if (!Util.IsPlayerValid(player))
+            return HookResult.Continue;
+
+        SetPlayerInvisibleFor(player, 0.5f);
+
+        if (Globals.InvisiblePlayers.TryGetValue(player!, out var data))
+        {
+            data.RevealUntil = Server.CurrentTime + 2.0f;
+            Globals.InvisiblePlayers[player!] = data;
+        }
+
         return HookResult.Continue;
     }
 
@@ -160,19 +175,30 @@ public class Invisible
 
     public static HookResult OnPlayerHurt(EventPlayerHurt @event, GameEventInfo info)
     {
-        SetPlayerInvisibleFor(@event.Userid, 0.5f);
+        var player = @event.Userid;
+        if (!Util.IsPlayerValid(player))
+            return HookResult.Continue;
+
+        SetPlayerInvisibleFor(player, 0.5f);
+
+        if (Globals.InvisiblePlayers.TryGetValue(player!, out var data))
+        {
+            data.RevealUntil = Server.CurrentTime + 2.0f;
+            Globals.InvisiblePlayers[player!] = data;
+        }
+
         return HookResult.Continue;
     }
 
     private static void SetPlayerInvisibleFor(CCSPlayerController? player, float time)
     {
         if (!Util.IsPlayerValid(player)) return;
-        if (!Globals.InvisiblePlayers.TryGetValue(player, out var data)) return;
+        if (!Globals.InvisiblePlayers.TryGetValue(player!, out var data)) return;
 
         data.StartTime = Server.CurrentTime;
         data.EndTime = Server.CurrentTime + time;
 
-        Globals.InvisiblePlayers[player] = data;
+        Globals.InvisiblePlayers[player!] = data;
     }
 
     public static void Setup()

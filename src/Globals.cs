@@ -5,15 +5,25 @@ namespace Funnies;
 
 public static class Globals
 {
-    public static FunniesConfig Config { get; set; } = null!;
+    private static FunniesConfig? _config;
+    public static FunniesConfig Config
+    {
+        get => _config ?? throw new InvalidOperationException("Globals.Config not initialized");
+        set => _config = value;
+    }
 
-#pragma warning disable CS8618
-    public static FunniesPlugin Plugin;
-#pragma warning restore CS8618
+    private static FunniesPlugin? _plugin;
+    public static FunniesPlugin Plugin
+    {
+        get => _plugin ?? throw new InvalidOperationException("Globals.Plugin not initialized");
+        set => _plugin = value;
+    }
 
+    // ✅ WALLHACK
     public static HashSet<CCSPlayerController> Wallhackers { get; set; } = new();
 
     public static Dictionary<CCSPlayerController, GlowData> GlowData { get; set; } = new();
 
+    // ✅ INVISIBLE
     public static Dictionary<CCSPlayerController, SoundData> InvisiblePlayers { get; set; } = new();
 }

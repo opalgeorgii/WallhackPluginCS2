@@ -12,7 +12,7 @@ public class CommandWallhack
         if (caller == null || !caller.IsValid)
             return;
 
-        if (command.ArgCount < 2)
+        if (string.IsNullOrWhiteSpace(command.ArgString))
         {
             caller.PrintToChat("Usage: !wh <name>");
             return;

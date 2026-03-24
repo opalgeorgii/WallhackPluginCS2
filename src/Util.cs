@@ -1,18 +1,18 @@
 using System.Diagnostics.CodeAnalysis;
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
-using CounterStrikeSharp.API.Modules.Memory;
 using CounterStrikeSharp.API.Modules.Utils;
 
 namespace Funnies;
 
 public static class Util
 {
-    public static string GetPlayerModel(CCSPlayerController player)
+    public static string? GetPlayerModel(CCSPlayerController player)
     {
-        return player.PlayerPawn!.Value!.CBodyComponent!.SceneNode!.GetSkeletonInstance().ModelState.ModelName;
+        var pawn = player.PlayerPawn?.Value;
+        return pawn?.CBodyComponent?.SceneNode
+                   ?.GetSkeletonInstance()?.ModelState?.ModelName;
     }
-
     public static bool IsPlayerValid([NotNullWhen(true)] CCSPlayerController? plr) =>
         plr != null &&
         plr.IsValid &&
@@ -24,21 +24,44 @@ public static class Util
     public static List<CCSPlayerController> GetValidPlayers() =>
         Utilities.GetPlayers().Where(IsPlayerValid).ToList();
 
-    public static List<CCSPlayerController> GetBots() =>
-        GetValidPlayers().Where(plr => plr.IsBot).ToList();
-
-    public static List<CCSPlayerController> GetRealPlayers() =>
-        GetValidPlayers().Where(plr => !plr.IsBot).ToList();
-
-    public static float Map(float value, float fromMin, float fromMax, float toMin, float toMax)
+    public static List<CCSPlayerController> GetBots()
     {
-        float normalized = (value - fromMin) / (fromMax - fromMin);
-        return toMin + normalized * (toMax - toMin);
+        var players = GetValidPlayers();
+        return players.Where(plr => plr.IsBot).ToList();
+    }
+
+    public static List<CCSPlayerController> GetRealPlayers()
+    {
+        var players = GetValidPlayers();
+        return players.Where(plr => !plr.IsBot).ToList();
     }
 
     public static CCSPlayerController? GetPlayerByName(string name)
     {
-        return GetValidPlayers().FirstOrDefault(x => x.PlayerName == name);
+        if (string.IsNullOrWhiteSpace(name))
+            return null;
+
+        return GetValidPlayers()
+            .FirstOrDefault(x => x.PlayerName.Equals(name, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public static CCSPlayerController? GetPlayerByPartialName(string partialName)
+    {
+        if (string.IsNullOrWhiteSpace(partialName))
+            return null;
+
+        return GetValidPlayers()
+            .FirstOrDefault(x => x.PlayerName.Contains(partialName, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public static List<CCSPlayerController> GetPlayersByPartialName(string partialName)
+    {
+        if (string.IsNullOrWhiteSpace(partialName))
+            return new();
+
+        return GetValidPlayers()
+            .Where(x => x.PlayerName.Contains(partialName, StringComparison.OrdinalIgnoreCase))
+            .ToList();
     }
 
     public static void ServerPrintToChat(CCSPlayerController player, string message)
@@ -46,18 +69,34 @@ public static class Util
         player.PrintToChat($" {ChatColors.Green}[SERVER]{ChatColors.White} {message}");
     }
 
-    public static List<CGameSceneNode> GetChildrenRecursive(CGameSceneNode gameSceneNode)
+    public static void Broadcast(string message)
     {
-        List<CGameSceneNode> result = new();
-        var currentChild = gameSceneNode.Child;
-
-        while (currentChild != null)
+        foreach (var player in GetValidPlayers())
         {
-            result.Add(currentChild);
-            result.AddRange(GetChildrenRecursive(currentChild));
-            currentChild = currentChild.NextSibling;
+            ServerPrintToChat(player, message);
         }
+    }
 
-        return result;
+    public static float Map(float value, float fromMin, float fromMax, float toMin, float toMax)
+    {
+        if (fromMax == fromMin) return toMin;
+
+        float normalized = (value - fromMin) / (fromMax - fromMin);
+        return toMin + normalized * (toMax - toMin);
+    }
+
+    public static IEnumerable<CGameSceneNode> GetChildrenRecursive(CGameSceneNode node)
+    {
+        var child = node.Child;
+
+        while (child != null)
+        {
+            yield return child;
+
+            foreach (var grandChild in GetChildrenRecursive(child))
+                yield return grandChild;
+
+            child = child.NextSibling;
+        }
     }
 }

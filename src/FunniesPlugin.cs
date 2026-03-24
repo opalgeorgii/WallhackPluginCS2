@@ -1,8 +1,9 @@
+using System;
 using System.Text.Json.Serialization;
 using CounterStrikeSharp.API.Core;
 using Funnies.Commands;
+using Microsoft.Extensions.Logging;
 using Funnies.Modules;
-
 namespace Funnies;
 
 public class FunniesConfig : BasePluginConfig
@@ -48,16 +49,25 @@ public class FunniesPlugin : BasePlugin, IPluginConfig<FunniesConfig>
         AddCommand("css_money", "Gives a player money", CommandMoney.OnMoneyCommand);
         AddCommand("css_rcon", "Runs a command", CommandRcon.OnRconCommand);
 
-        if (Config.InvisibleEnabled)
-            Invisible.Setup();
+        try
+        {
+            if (Config.InvisibleEnabled)
+                Invisible.Setup();
 
-        if (Config.WallhackEnabled)
-            Wallhack.Setup();
+            if (Config.WallhackEnabled)
+                Wallhack.Setup();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError("Error setting up modules: {0}", ex);
+        }
+
+        Logger.LogInformation("FunniesPlugin loaded | Wallhack: {0}, Invisible: {1}", Config.WallhackEnabled, Config.InvisibleEnabled);
     }
 
     public override void Unload(bool hotReload)
     {
-        if (hotReload)
+        try
         {
             if (Config.InvisibleEnabled)
                 Invisible.Cleanup();
@@ -65,6 +75,12 @@ public class FunniesPlugin : BasePlugin, IPluginConfig<FunniesConfig>
             if (Config.WallhackEnabled)
                 Wallhack.Cleanup();
         }
+        catch (Exception ex)
+        {
+            Logger.LogError("Error during cleanup: {0}", ex);
+        }
+
+        Logger.LogInformation("FunniesPlugin unloaded");
     }
 
     public void OnTick()
@@ -77,18 +93,26 @@ public class FunniesPlugin : BasePlugin, IPluginConfig<FunniesConfig>
     {
         foreach ((CCheckTransmitInfo info, CCSPlayerController? player) in infoList)
         {
-            if (!Util.IsPlayerValid(player)) continue;
+            if (!Util.IsPlayerValid(player))
+                continue;
+
+            var validPlayer = player!;
 
             if (Config.WallhackEnabled)
-                Wallhack.OnPlayerTransmit(info, player!);
+                Wallhack.OnPlayerTransmit(info, validPlayer);
 
             if (Config.InvisibleEnabled)
-                Invisible.OnPlayerTransmit(info, player!);
+                Invisible.OnPlayerTransmit(info, validPlayer);
         }
     }
 
     public void OnConfigParsed(FunniesConfig config)
     {
+        // Validate RGB values
+        config.R = Math.Clamp(config.R, (byte)0, (byte)255);
+        config.G = Math.Clamp(config.G, (byte)0, (byte)255);
+        config.B = Math.Clamp(config.B, (byte)0, (byte)255);
+
         Config = config;
         Globals.Config = config;
     }

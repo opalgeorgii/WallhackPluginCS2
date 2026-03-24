@@ -13,7 +13,7 @@ public class CommandWallhack
 
         if (string.IsNullOrWhiteSpace(command.ArgString))
         {
-            Util.ServerPrintToChat(caller, "Usage: !wh <player_name>");
+            Util.ServerPrintToChat(caller, "Usage: !wh <player_name> | !wallhack <player_name>");
             return;
         }
 

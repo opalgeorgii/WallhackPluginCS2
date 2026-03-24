@@ -12,16 +12,22 @@ namespace Funnies.Modules;
 
 public class Invisible
 {
-    private static List<CEntityInstance> _entities = new();
+    // Track entity → owner
+    private static Dictionary<CEntityInstance, CCSPlayerController> _entities = new();
 
     public static void OnPlayerTransmit(CCheckTransmitInfo info, CCSPlayerController player)
     {
         var gameRules = Utilities.FindAllEntitiesByDesignerName<CCSGameRulesProxy>("cs_gamerules").FirstOrDefault();
         if (gameRules == null) return;
 
-        foreach (var entity in _entities)
+        // Hide entities ONLY if they belong to invisible players
+        foreach (var (entity, owner) in _entities)
         {
-            if (!Globals.InvisiblePlayers.ContainsKey(player) && player.Team != CsTeam.Spectator)
+            if (!Util.IsPlayerValid(owner))
+                continue;
+
+            // Hide from everyone except owner
+            if (owner != player)
                 info.TransmitEntities.Remove(entity);
         }
 
@@ -50,6 +56,8 @@ public class Invisible
             if (pawn == null || !pawn.IsValid) continue;
 
             var weaponServices = pawn.WeaponServices;
+
+            // Reload handling (unchanged)
             if (weaponServices != null)
             {
                 var activeWeapon = weaponServices.ActiveWeapon;
@@ -74,6 +82,7 @@ public class Invisible
                 }
             }
 
+            // Alpha calculation
             float alpha = 255f;
             var half = Server.CurrentTime + ((invis.Value.StartTime - Server.CurrentTime) / 2);
             if (half < Server.CurrentTime)
@@ -81,42 +90,46 @@ public class Invisible
 
             int progress = (int)Util.Map(alpha, 0, 255, 0, 20);
 
-            if (alpha == 0)
-            {
-                pawn.EntitySpottedState.Spotted = false;
-                pawn.EntitySpottedState.SpottedByMask[0] = 0;
-                _entities.Add(pawn);
-                var data = Globals.InvisiblePlayers[invis.Key];
-                data.HackyReload = false;
-                Globals.InvisiblePlayers[invis.Key] = data;
-            }
-            else
-            {
-                _entities.Remove(pawn);
-            }
-
             invis.Key.PrintToCenterHtml(
                 string.Concat(Enumerable.Repeat("&#9608;", progress)) +
                 string.Concat(Enumerable.Repeat("&#9617;", 20 - progress))
             );
 
+            // Apply render
             pawn.Render = Color.FromArgb((int)alpha, pawn.Render);
             Utilities.SetStateChanged(pawn, "CBaseModelEntity", "m_clrRender");
 
             pawn.ShadowStrength = alpha < 128f ? 1.0f : 0.0f;
             Utilities.SetStateChanged(pawn, "CBaseModelEntity", "m_flShadowStrength");
 
+            // Apply to weapons
             foreach (var weapon in pawn.WeaponServices!.MyWeapons)
             {
-                weapon.Value!.ShadowStrength = alpha < 128f ? 1.0f : 0.0f;
-                Utilities.SetStateChanged(weapon.Value, "CBaseModelEntity", "m_flShadowStrength");
+                var w = weapon.Value!;
 
-                if (alpha < 128f)
+                w.Render = Color.FromArgb((int)alpha, pawn.Render);
+                Utilities.SetStateChanged(w, "CBaseModelEntity", "m_clrRender");
+
+                w.ShadowStrength = alpha < 128f ? 1.0f : 0.0f;
+                Utilities.SetStateChanged(w, "CBaseModelEntity", "m_flShadowStrength");
+            }
+
+            // 🔥 ONLY hide when fully invisible
+            if (alpha == 0)
+            {
+                pawn.EntitySpottedState.Spotted = false;
+                pawn.EntitySpottedState.SpottedByMask[0] = 0;
+
+                _entities[pawn] = invis.Key;
+
+                foreach (var weapon in pawn.WeaponServices!.MyWeapons)
                 {
-                    weapon.Value.Render = Color.FromArgb((int)alpha, pawn.Render);
-                    Utilities.SetStateChanged(weapon.Value, "CBaseModelEntity", "m_clrRender");
-                    _entities.Add(weapon.Value);
+                    _entities[weapon.Value!] = invis.Key;
                 }
+
+                var data = Globals.InvisiblePlayers[invis.Key];
+                data.HackyReload = false;
+                Globals.InvisiblePlayers[invis.Key] = data;
             }
         }
     }
@@ -190,7 +203,9 @@ public class Invisible
 
             foreach (var weapon in pawn.WeaponServices!.MyWeapons)
             {
-                weapon.Value!.ShadowStrength = 1.0f;
+                weapon.Value!.Render = pawn.Render;
+                weapon.Value.ShadowStrength = 1.0f;
+                Utilities.SetStateChanged(weapon.Value, "CBaseModelEntity", "m_clrRender");
                 Utilities.SetStateChanged(weapon.Value, "CBaseModelEntity", "m_flShadowStrength");
             }
         }

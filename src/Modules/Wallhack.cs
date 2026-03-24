@@ -14,12 +14,25 @@ public class Wallhack
         if (!Util.IsPlayerValid(player))
             return;
 
+        // 🔥 CLEAN INVALID DATA (prevents crashes)
+        foreach (var (target, data) in Globals.GlowData.ToList())
+        {
+            if (!Util.IsPlayerValid(target) ||
+                data.GlowEnt == null || data.ModelRelay == null ||
+                !data.GlowEnt.IsValid || !data.ModelRelay.IsValid)
+            {
+                Globals.GlowData.Remove(target);
+                continue;
+            }
+        }
+
         foreach (var (target, data) in Globals.GlowData)
         {
             if (!Util.IsPlayerValid(target))
                 continue;
 
-            if (!data.GlowEnt.IsValid || !data.ModelRelay.IsValid)
+            if (data.GlowEnt == null || data.ModelRelay == null ||
+                !data.GlowEnt.IsValid || !data.ModelRelay.IsValid)
             {
                 info.TransmitEntities.Remove(data.ModelRelay);
                 info.TransmitEntities.Remove(data.GlowEnt);
@@ -65,12 +78,18 @@ public class Wallhack
         if (!Util.IsPlayerValid(player))
             return HookResult.Continue;
 
+        // 🔥 ALWAYS CLEAN OLD ENTITIES
         RemoveGlow(player);
 
-        Globals.Plugin.AddTimer(0.5f, () =>
+        // 🔥 DELAY to ensure pawn is fully ready (CRITICAL)
+        Globals.Plugin.AddTimer(0.8f, () =>
         {
             if (!Util.IsPlayerValid(player)) return;
             if (!player.PawnIsAlive) return;
+
+            var pawn = player.PlayerPawn?.Value;
+            if (pawn == null || !pawn.IsValid) return;
+
             Glow(player);
         });
 
@@ -104,10 +123,10 @@ public class Wallhack
         if (!Globals.GlowData.TryGetValue(player, out var data))
             return;
 
-        if (data.GlowEnt.IsValid)
+        if (data.GlowEnt != null && data.GlowEnt.IsValid)
             data.GlowEnt.Remove();
 
-        if (data.ModelRelay.IsValid)
+        if (data.ModelRelay != null && data.ModelRelay.IsValid)
             data.ModelRelay.Remove();
 
         Globals.GlowData.Remove(player);
@@ -115,8 +134,15 @@ public class Wallhack
 
     private static void Glow(CCSPlayerController player)
     {
+        // 🔥 PREVENT DUPLICATES
+        RemoveGlow(player);
+
         var pawn = player.PlayerPawn?.Value;
         if (pawn == null || !pawn.IsValid) return;
+
+        // Extra safety (prevents crash in rare cases)
+        if (pawn.LifeState != (byte)LifeState_t.LIFE_ALIVE)
+            return;
 
         var sceneNode = pawn.CBodyComponent?.SceneNode;
         if (sceneNode == null) return;
@@ -124,16 +150,15 @@ public class Wallhack
         var skeleton = sceneNode.GetSkeletonInstance();
         if (skeleton == null) return;
 
-        string model = skeleton.ModelState.ModelName;
-        if (string.IsNullOrEmpty(model)) return;
-
-        if (Globals.GlowData.ContainsKey(player)) return;
+        string? model = skeleton?.ModelState?.ModelName;
+        if (string.IsNullOrWhiteSpace(model))
+            return;
 
         var glowEntity = Utilities.CreateEntityByName<CDynamicProp>("prop_dynamic");
         var modelRelay = Utilities.CreateEntityByName<CDynamicProp>("prop_dynamic");
         if (glowEntity == null || modelRelay == null) return;
 
-        // Setup spawn flags before spawn
+        // Setup BEFORE spawn
         modelRelay.Spawnflags = 256;
         modelRelay.Render = Color.Transparent;
         modelRelay.RenderMode = RenderMode_t.kRenderNone;
@@ -141,30 +166,24 @@ public class Wallhack
         glowEntity.Spawnflags = 256;
         glowEntity.Render = Color.FromArgb(1, 0, 0, 0);
 
+        // 🔥 CRITICAL FIX: set model BEFORE spawn
+        modelRelay.SetModel(model);
+        glowEntity.SetModel(model);
+
         modelRelay.DispatchSpawn();
         glowEntity.DispatchSpawn();
 
-        // Delay everything until after spawn
-        Globals.Plugin.AddTimer(0.1f, () =>
-        {
-            if (!pawn.IsValid || !glowEntity.IsValid || !modelRelay.IsValid) return;
+        // Follow chain
+        modelRelay.AcceptInput("FollowEntity", pawn, null, "!activator");
+        glowEntity.AcceptInput("FollowEntity", modelRelay, null, "!activator");
 
-            // Safe to set model now
-            modelRelay.SetModel(model);
-            glowEntity.SetModel(model);
-
-            // Follow chain
-            modelRelay.AcceptInput("FollowEntity", pawn, null, "!activator");
-            glowEntity.AcceptInput("FollowEntity", modelRelay, null, "!activator");
-
-            // Glow setup
-            glowEntity.Glow.GlowRange = 5000;
-            glowEntity.Glow.GlowRangeMin = 0;
-            glowEntity.Glow.GlowColorOverride =
-                Color.FromArgb(255, Globals.Config.R, Globals.Config.G, Globals.Config.B);
-            glowEntity.Glow.GlowTeam = -1;
-            glowEntity.Glow.GlowType = 3;
-        });
+        // Glow setup
+        glowEntity.Glow.GlowRange = 5000;
+        glowEntity.Glow.GlowRangeMin = 0;
+        glowEntity.Glow.GlowColorOverride =
+            Color.FromArgb(255, Globals.Config.R, Globals.Config.G, Globals.Config.B);
+        glowEntity.Glow.GlowTeam = -1;
+        glowEntity.Glow.GlowType = 3;
 
         Globals.GlowData[player] = new GlowData
         {
@@ -187,10 +206,10 @@ public class Wallhack
     {
         foreach (var entity in Globals.GlowData)
         {
-            if (entity.Value.GlowEnt.IsValid)
+            if (entity.Value.GlowEnt != null && entity.Value.GlowEnt.IsValid)
                 entity.Value.GlowEnt.Remove();
 
-            if (entity.Value.ModelRelay.IsValid)
+            if (entity.Value.ModelRelay != null && entity.Value.ModelRelay.IsValid)
                 entity.Value.ModelRelay.Remove();
         }
 

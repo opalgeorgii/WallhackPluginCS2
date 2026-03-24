@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics.CodeAnalysis;
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
@@ -13,6 +14,7 @@ public static class Util
         return pawn?.CBodyComponent?.SceneNode
                    ?.GetSkeletonInstance()?.ModelState?.ModelName;
     }
+
     public static bool IsPlayerValid([NotNullWhen(true)] CCSPlayerController? plr) =>
         plr != null &&
         plr.IsValid &&
@@ -41,8 +43,10 @@ public static class Util
         if (string.IsNullOrWhiteSpace(name))
             return null;
 
-        return GetValidPlayers()
-            .FirstOrDefault(x => x.PlayerName.Equals(name, StringComparison.OrdinalIgnoreCase));
+        var players = GetValidPlayers();
+
+        return players.FirstOrDefault(x => x.PlayerName.Equals(name, StringComparison.OrdinalIgnoreCase))
+            ?? players.FirstOrDefault(x => x.PlayerName.Contains(name, StringComparison.OrdinalIgnoreCase));
     }
 
     public static CCSPlayerController? GetPlayerByPartialName(string partialName)
@@ -82,6 +86,8 @@ public static class Util
         if (fromMax == fromMin) return toMin;
 
         float normalized = (value - fromMin) / (fromMax - fromMin);
+        normalized = Math.Clamp(normalized, 0f, 1f);
+
         return toMin + normalized * (toMax - toMin);
     }
 

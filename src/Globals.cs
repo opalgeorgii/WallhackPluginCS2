@@ -1,3 +1,4 @@
+using System;
 using CounterStrikeSharp.API.Core;
 using Funnies.Models;
 
@@ -19,11 +20,16 @@ public static class Globals
         set => _plugin = value;
     }
 
-    // ✅ WALLHACK
-    public static HashSet<CCSPlayerController> Wallhackers { get; set; } = new();
+    public static HashSet<CCSPlayerController> Wallhackers { get; } = new();
 
-    public static Dictionary<CCSPlayerController, GlowData> GlowData { get; set; } = new();
+    public static Dictionary<CCSPlayerController, GlowData> GlowData { get; } = new();
 
-    // ✅ INVISIBLE
-    public static Dictionary<CCSPlayerController, SoundData> InvisiblePlayers { get; set; } = new();
+    public static Dictionary<CCSPlayerController, SoundData> InvisiblePlayers { get; } = new();
+
+    public static void Reset()
+    {
+        Wallhackers.Clear();
+        GlowData.Clear();
+        InvisiblePlayers.Clear();
+    }
 }

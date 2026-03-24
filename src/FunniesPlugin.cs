@@ -9,13 +9,13 @@ namespace Funnies;
 public class FunniesConfig : BasePluginConfig
 {
     [JsonPropertyName("ColorR")]
-    public byte R { get; set; } = 255;
+    public byte R { get; set; } = 128;
 
     [JsonPropertyName("ColorG")]
     public byte G { get; set; } = 0;
 
     [JsonPropertyName("ColorB")]
-    public byte B { get; set; } = 0;
+    public byte B { get; set; } = 128;
 
     [JsonPropertyName("CommandPermission")]
     public string AdminPermission { get; set; } = "@css/generic";

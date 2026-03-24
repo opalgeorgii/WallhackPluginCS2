@@ -34,8 +34,13 @@ public class CommandInvisible
         {
             if (wasInvisible)
             {
+                // Restore player render
                 pawn.Render = Color.FromArgb(255, pawn.Render);
                 Utilities.SetStateChanged(pawn, "CBaseModelEntity", "m_clrRender");
+
+                // 🔥 FIX: restore shadow
+                pawn.ShadowStrength = 1.0f;
+                Utilities.SetStateChanged(pawn, "CBaseModelEntity", "m_flShadowStrength");
             }
 
             if (pawn.WeaponServices != null)
@@ -44,8 +49,13 @@ public class CommandInvisible
                 {
                     if (weapon.Value != null)
                     {
+                        // Restore weapon render
                         weapon.Value.Render = pawn.Render;
                         Utilities.SetStateChanged(weapon.Value, "CBaseModelEntity", "m_clrRender");
+
+                        // 🔥 FIX: restore weapon shadow
+                        weapon.Value.ShadowStrength = 1.0f;
+                        Utilities.SetStateChanged(weapon.Value, "CBaseModelEntity", "m_flShadowStrength");
                     }
                 }
             }

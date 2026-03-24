@@ -10,34 +10,48 @@ public class CommandInvisible
 {
     public static void OnInvisibleCommand(CCSPlayerController? caller, CommandInfo command)
     {
-        if (!AdminManager.PlayerHasPermissions(caller, Globals.Config.AdminPermission)) return;
+        if (!AdminManager.PlayerHasPermissions(caller, Globals.Config.AdminPermission))
+            return;
 
         var player = Util.GetPlayerByName(command.ArgString);
-
-        if (player != null)
+        if (player == null)
         {
             if (Util.IsPlayerValid(caller))
-                Util.ServerPrintToChat(caller!, $"Toggled invisiblity on {command.ArgString}");
+                Util.ServerPrintToChat(caller, $"Player {command.ArgString} not found");
+            return;
+        }
 
-            if (Globals.InvisiblePlayers.Remove(player))
+        bool wasInvisible = Globals.InvisiblePlayers.Remove(player);
+        var pawn = player.PlayerPawn?.Value;
+
+        if (pawn != null)
+        {
+            if (wasInvisible)
             {
-                var pawn = player.PlayerPawn.Value;
-                pawn!.Render = Color.FromArgb(255, pawn.Render);
+                pawn.Render = Color.FromArgb(255, pawn.Render);
                 Utilities.SetStateChanged(pawn, "CBaseModelEntity", "m_clrRender");
+            }
 
-                foreach (var weapon in pawn.WeaponServices!.MyWeapons)
+            if (pawn.WeaponServices != null)
+            {
+                foreach (var weapon in pawn.WeaponServices.MyWeapons)
                 {
-                    weapon.Value!.Render = pawn!.Render;
-                    Utilities.SetStateChanged(weapon.Value, "CBaseModelEntity", "m_clrRender");
+                    if (weapon.Value != null)
+                    {
+                        weapon.Value.Render = pawn.Render;
+                        Utilities.SetStateChanged(weapon.Value, "CBaseModelEntity", "m_clrRender");
+                    }
                 }
             }
-            else
-                Globals.InvisiblePlayers.Add(player, new());
         }
-        else
+
+        if (!wasInvisible)
+            Globals.InvisiblePlayers.Add(player, new());
+
+        if (Util.IsPlayerValid(caller))
         {
-            if (Util.IsPlayerValid(caller))
-                Util.ServerPrintToChat(caller!, $"Player {command.ArgString} not found");
+            string status = wasInvisible ? "now visible" : "now invisible";
+            Util.ServerPrintToChat(caller, $"{player.PlayerName} is {status}");
         }
     }
 }

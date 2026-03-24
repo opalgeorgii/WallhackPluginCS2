@@ -1,6 +1,5 @@
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
-using CounterStrikeSharp.API.Modules.Utils;
 using CounterStrikeSharp.API.Modules.Commands;
 
 namespace Funnies.Commands;
@@ -14,42 +13,40 @@ public class CommandWallhack
 
         if (string.IsNullOrWhiteSpace(command.ArgString))
         {
-            caller.PrintToChat("Usage: !wh <name>");
+            Util.ServerPrintToChat(caller, "Usage: !wh <player_name>");
             return;
         }
 
         string targetName = command.ArgString.Trim();
 
-        CCSPlayerController? target = null;
+        var matchingPlayers = Util.GetPlayersByPartialName(targetName)
+            .Where(p => !p.IsBot)
+            .ToList();
 
-        foreach (var player in Utilities.GetPlayers())
+        if (matchingPlayers.Count == 0)
         {
-            if (player == null || !player.IsValid)
-                continue;
-
-            if (player.PlayerName.Contains(targetName, StringComparison.OrdinalIgnoreCase))
-            {
-                target = player;
-                break;
-            }
-        }
-
-        if (target == null)
-        {
-            caller.PrintToChat($"Player not found: {targetName}");
+            Util.ServerPrintToChat(caller, $"No valid player found matching '{targetName}'.");
             return;
         }
 
-        // ✅ Toggle wallhack
+        if (matchingPlayers.Count > 1)
+        {
+            string names = string.Join(", ", matchingPlayers.Select(p => p.PlayerName));
+            Util.ServerPrintToChat(caller, $"Multiple matches: {names}. Be more specific.");
+            return;
+        }
+
+        var target = matchingPlayers[0];
+
         if (Globals.Wallhackers.Contains(target))
         {
             Globals.Wallhackers.Remove(target);
-            caller.PrintToChat($"Wallhack OFF for {target.PlayerName}");
+            Util.ServerPrintToChat(caller, $"Wallhack OFF for {target.PlayerName}");
         }
         else
         {
             Globals.Wallhackers.Add(target);
-            caller.PrintToChat($"Wallhack ON for {target.PlayerName}");
+            Util.ServerPrintToChat(caller, $"Wallhack ON for {target.PlayerName}");
         }
     }
 }

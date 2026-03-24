@@ -33,7 +33,6 @@ public class CommandRcon
             return;
         }
 
-        // Execute the command
         Server.ExecuteCommand(cmd);
 
         Util.ServerPrintToChat(caller, $"Executed: {cmd}");

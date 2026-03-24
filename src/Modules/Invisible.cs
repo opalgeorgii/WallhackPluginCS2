@@ -16,14 +16,36 @@ public class Invisible
 
     public static void OnPlayerTransmit(CCheckTransmitInfo info, CCSPlayerController player)
     {
+        if (!Util.IsPlayerValid(player))
+            return;
+
+        foreach (var invis in Globals.InvisiblePlayers)
+        {
+            var owner = invis.Key;
+            if (!Util.IsPlayerValid(owner)) continue;
+
+            var pawn = owner.PlayerPawn?.Value;
+            if (pawn == null) continue;
+
+            // If viewer should not see the invisible player
+            if (player != owner && player.Team != CsTeam.Spectator)
+            {
+                info.TransmitEntities.Remove(pawn);
+
+                if (pawn.WeaponServices != null)
+                {
+                    foreach (var weapon in pawn.WeaponServices.MyWeapons)
+                    {
+                        if (weapon.Value != null)
+                            info.TransmitEntities.Remove(weapon.Value);
+                    }
+                }
+            }
+        }
+
+        // Keep your C4 logic if needed
         var gameRules = Utilities.FindAllEntitiesByDesignerName<CCSGameRulesProxy>("cs_gamerules").FirstOrDefault();
         if (gameRules == null) return;
-
-        foreach (var entity in _entities)
-        {
-            if (!Globals.InvisiblePlayers.ContainsKey(player) && player.Team != CsTeam.Spectator)
-                info.TransmitEntities.Remove(entity);
-        }
 
         if (gameRules.GameRules?.WarmupPeriod == true) return;
 
@@ -44,12 +66,16 @@ public class Invisible
 
         foreach (var invis in Globals.InvisiblePlayers)
         {
-            if (!Util.IsPlayerValid(invis.Key)) continue;
+            var player = invis.Key;
+            var data = invis.Value;
 
-            var pawn = invis.Key.PlayerPawn?.Value;
+            if (!Util.IsPlayerValid(player)) continue;
+
+            var pawn = player.PlayerPawn?.Value;
             if (pawn == null || !pawn.IsValid) continue;
 
             var weaponServices = pawn.WeaponServices;
+
             if (weaponServices != null)
             {
                 var activeWeapon = weaponServices.ActiveWeapon;
@@ -62,61 +88,76 @@ public class Invisible
                         if (currentWeapon != null && currentWeapon.IsValid)
                         {
                             var vData = currentWeapon.VData;
-                            if (vData != null && currentWeapon.InReload && !invis.Value.HackyReload)
+                            if (vData != null && currentWeapon.InReload && !data.HackyReload)
                             {
-                                var data = Globals.InvisiblePlayers[invis.Key];
                                 data.HackyReload = true;
-                                Globals.InvisiblePlayers[invis.Key] = data;
-                                SetPlayerInvisibleFor(invis.Key, vData.DisallowAttackAfterReloadStartDuration);
+                                Globals.InvisiblePlayers[player] = data;
+                                SetPlayerInvisibleFor(player, vData.DisallowAttackAfterReloadStartDuration);
                             }
                         }
                     }
                 }
             }
 
+            // Alpha calculation
             float alpha = 255f;
-            var half = Server.CurrentTime + ((invis.Value.StartTime - Server.CurrentTime) / 2);
+            var half = Server.CurrentTime + ((data.StartTime - Server.CurrentTime) / 2);
             if (half < Server.CurrentTime)
-                alpha = invis.Value.EndTime < Server.CurrentTime ? 0 : Util.Map(Server.CurrentTime, half, invis.Value.EndTime, 255, 0);
+                alpha = data.EndTime < Server.CurrentTime ? 0 : Util.Map(Server.CurrentTime, half, data.EndTime, 255, 0);
 
             int progress = (int)Util.Map(alpha, 0, 255, 0, 20);
 
-            if (alpha == 0)
-            {
-                pawn.EntitySpottedState.Spotted = false;
-                pawn.EntitySpottedState.SpottedByMask[0] = 0;
-                _entities.Add(pawn);
-                var data = Globals.InvisiblePlayers[invis.Key];
-                data.HackyReload = false;
-                Globals.InvisiblePlayers[invis.Key] = data;
-            }
-            else
-            {
-                _entities.Remove(pawn);
-            }
-
-            invis.Key.PrintToCenterHtml(
+            // Update progress bar in center
+            player.PrintToCenterHtml(
                 string.Concat(Enumerable.Repeat("&#9608;", progress)) +
                 string.Concat(Enumerable.Repeat("&#9617;", 20 - progress))
             );
 
+            // Player render & shadow
             pawn.Render = Color.FromArgb((int)alpha, pawn.Render);
+            pawn.ShadowStrength = alpha == 0 ? 0.0f : 1.0f;
             Utilities.SetStateChanged(pawn, "CBaseModelEntity", "m_clrRender");
-
-            pawn.ShadowStrength = alpha < 128f ? 1.0f : 0.0f;
             Utilities.SetStateChanged(pawn, "CBaseModelEntity", "m_flShadowStrength");
 
-            foreach (var weapon in pawn.WeaponServices!.MyWeapons)
+            // Weapons render & shadow
+            if (weaponServices != null)
             {
-                weapon.Value!.ShadowStrength = alpha < 128f ? 1.0f : 0.0f;
-                Utilities.SetStateChanged(weapon.Value, "CBaseModelEntity", "m_flShadowStrength");
-
-                if (alpha < 128f)
+                foreach (var weapon in weaponServices.MyWeapons)
                 {
-                    weapon.Value.Render = Color.FromArgb((int)alpha, pawn.Render);
-                    Utilities.SetStateChanged(weapon.Value, "CBaseModelEntity", "m_clrRender");
-                    _entities.Add(weapon.Value);
+                    var wpn = weapon.Value;
+                    if (wpn == null) continue;
+
+                    if (alpha == 0)
+                    {
+                        // Fully invisible
+                        wpn.Render = Color.FromArgb(0, 0, 0, 0);
+                        wpn.ShadowStrength = 0.0f;
+                        _entities.Add(wpn); // hide from transmit
+                    }
+                    else
+                    {
+                        // Fading / visible
+                        wpn.Render = Color.FromArgb((int)alpha, pawn.Render);
+                        wpn.ShadowStrength = alpha < 128f ? 1.0f : 0.0f;
+                        _entities.Remove(wpn);
+                    }
+
+                    Utilities.SetStateChanged(wpn, "CBaseModelEntity", "m_clrRender");
+                    Utilities.SetStateChanged(wpn, "CBaseModelEntity", "m_flShadowStrength");
                 }
+            }
+
+            // Fully invisible -> mark pawn to remove
+            if (alpha == 0)
+                _entities.Add(pawn);
+            else
+                _entities.Remove(pawn);
+
+            // Reset hacky reload flag
+            if (alpha == 0)
+            {
+                data.HackyReload = false;
+                Globals.InvisiblePlayers[player] = data;
             }
         }
     }
@@ -184,14 +225,24 @@ public class Invisible
             if (pawn == null) continue;
 
             pawn.Render = Color.FromArgb(255, pawn.Render);
-            Utilities.SetStateChanged(pawn, "CBaseModelEntity", "m_clrRender");
             pawn.ShadowStrength = 1.0f;
+            Utilities.SetStateChanged(pawn, "CBaseModelEntity", "m_clrRender");
             Utilities.SetStateChanged(pawn, "CBaseModelEntity", "m_flShadowStrength");
 
-            foreach (var weapon in pawn.WeaponServices!.MyWeapons)
+            var weaponServices = pawn.WeaponServices;
+            if (weaponServices != null)
             {
-                weapon.Value!.ShadowStrength = 1.0f;
-                Utilities.SetStateChanged(weapon.Value, "CBaseModelEntity", "m_flShadowStrength");
+                foreach (var weapon in weaponServices.MyWeapons)
+                {
+                    var wpn = weapon.Value;
+                    if (wpn == null) continue;
+
+                    wpn.Render = Color.FromArgb(255, pawn.Render);
+                    wpn.ShadowStrength = 1.0f;
+
+                    Utilities.SetStateChanged(wpn, "CBaseModelEntity", "m_clrRender");
+                    Utilities.SetStateChanged(wpn, "CBaseModelEntity", "m_flShadowStrength");
+                }
             }
         }
 

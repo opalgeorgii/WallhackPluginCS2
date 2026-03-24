@@ -10,8 +10,14 @@ public class CommandInvisible
 {
     public static void OnInvisibleCommand(CCSPlayerController? caller, CommandInfo command)
     {
-        if (!AdminManager.PlayerHasPermissions(caller, Globals.Config.AdminPermission))
+        if (caller == null || !caller.IsValid)
             return;
+
+        if (!AdminManager.PlayerHasPermissions(caller, Globals.Config.AdminPermission))
+        {
+            Util.ServerPrintToChat(caller, "You do not have permission to use this command.");
+            return;
+        }
 
         var player = Util.GetPlayerByName(command.ArgString);
         if (player == null)

@@ -1,5 +1,6 @@
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
+using CounterStrikeSharp.API.Modules.Admin;
 using CounterStrikeSharp.API.Modules.Commands;
 
 namespace Funnies.Commands;
@@ -10,6 +11,12 @@ public class CommandWallhack
     {
         if (caller == null || !caller.IsValid)
             return;
+
+        if (!AdminManager.PlayerHasPermissions(caller, Globals.Config.AdminPermission))
+        {
+            Util.ServerPrintToChat(caller, "You do not have permission to use this command.");
+            return;
+        }
 
         if (string.IsNullOrWhiteSpace(command.ArgString))
         {

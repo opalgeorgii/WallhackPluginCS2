@@ -20,7 +20,11 @@ public class Wallhack
                 continue;
 
             if (!data.GlowEnt.IsValid || !data.ModelRelay.IsValid)
+            {
+                info.TransmitEntities.Remove(data.ModelRelay);
+                info.TransmitEntities.Remove(data.GlowEnt);
                 continue;
+            }
 
             if (target == player)
             {
@@ -30,12 +34,10 @@ public class Wallhack
             }
 
             bool isInvisible = Globals.InvisiblePlayers.ContainsKey(target);
-
             bool isRevealed = false;
+
             if (isInvisible && Globals.InvisiblePlayers.TryGetValue(target, out var invisData))
-            {
                 isRevealed = Server.CurrentTime <= invisData.RevealUntil;
-            }
 
             bool shouldSee =
                 Globals.Wallhackers.Contains(player) &&
@@ -51,7 +53,6 @@ public class Wallhack
             }
             else
             {
-                // 🔥 THIS FIXES STUCK GLOW
                 info.TransmitEntities.Remove(data.ModelRelay);
                 info.TransmitEntities.Remove(data.GlowEnt);
             }
@@ -61,7 +62,6 @@ public class Wallhack
     public static HookResult OnPlayerSpawn(EventPlayerSpawn @event, GameEventInfo info)
     {
         var player = @event.Userid;
-
         if (!Util.IsPlayerValid(player))
             return HookResult.Continue;
 
@@ -71,7 +71,6 @@ public class Wallhack
         {
             if (!Util.IsPlayerValid(player)) return;
             if (!player.PawnIsAlive) return;
-
             Glow(player);
         });
 
@@ -81,7 +80,6 @@ public class Wallhack
     public static HookResult OnPlayerDisconnect(EventPlayerDisconnect @event, GameEventInfo info)
     {
         var player = @event.Userid;
-
         if (!Util.IsPlayerValid(player))
             return HookResult.Continue;
 
@@ -94,12 +92,10 @@ public class Wallhack
     public static HookResult OnPlayerDeath(EventPlayerDeath @event, GameEventInfo info)
     {
         var player = @event.Userid;
-
         if (!Util.IsPlayerValid(player))
             return HookResult.Continue;
 
         RemoveGlow(player);
-
         return HookResult.Continue;
     }
 
@@ -135,12 +131,9 @@ public class Wallhack
 
         var glowEntity = Utilities.CreateEntityByName<CDynamicProp>("prop_dynamic");
         var modelRelay = Utilities.CreateEntityByName<CDynamicProp>("prop_dynamic");
-
         if (glowEntity == null || modelRelay == null) return;
 
-        glowEntity.SetModel(model);
-        modelRelay.SetModel(model);
-
+        // Setup spawn flags before spawn
         modelRelay.Spawnflags = 256;
         modelRelay.Render = Color.Transparent;
         modelRelay.RenderMode = RenderMode_t.kRenderNone;
@@ -151,20 +144,27 @@ public class Wallhack
         modelRelay.DispatchSpawn();
         glowEntity.DispatchSpawn();
 
-        Globals.Plugin.AddTimer(0.05f, () =>
+        // Delay everything until after spawn
+        Globals.Plugin.AddTimer(0.1f, () =>
         {
-            if (!pawn.IsValid) return;
+            if (!pawn.IsValid || !glowEntity.IsValid || !modelRelay.IsValid) return;
 
+            // Safe to set model now
+            modelRelay.SetModel(model);
+            glowEntity.SetModel(model);
+
+            // Follow chain
             modelRelay.AcceptInput("FollowEntity", pawn, null, "!activator");
             glowEntity.AcceptInput("FollowEntity", modelRelay, null, "!activator");
-        });
 
-        glowEntity.Glow.GlowRange = 5000;
-        glowEntity.Glow.GlowRangeMin = 0;
-        glowEntity.Glow.GlowColorOverride =
-            Color.FromArgb(255, Globals.Config.R, Globals.Config.G, Globals.Config.B);
-        glowEntity.Glow.GlowTeam = -1;
-        glowEntity.Glow.GlowType = 3;
+            // Glow setup
+            glowEntity.Glow.GlowRange = 5000;
+            glowEntity.Glow.GlowRangeMin = 0;
+            glowEntity.Glow.GlowColorOverride =
+                Color.FromArgb(255, Globals.Config.R, Globals.Config.G, Globals.Config.B);
+            glowEntity.Glow.GlowTeam = -1;
+            glowEntity.Glow.GlowType = 3;
+        });
 
         Globals.GlowData[player] = new GlowData
         {

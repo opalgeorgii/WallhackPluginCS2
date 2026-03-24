@@ -4,12 +4,13 @@ using CounterStrikeSharp.API.Core;
 using Funnies.Commands;
 using Microsoft.Extensions.Logging;
 using Funnies.Modules;
+
 namespace Funnies;
 
 public class FunniesConfig : BasePluginConfig
 {
     [JsonPropertyName("ColorR")]
-    public byte R { get; set; } = 128;
+    public byte R { get; set; } = 255;
 
     [JsonPropertyName("ColorG")]
     public byte G { get; set; } = 0;
@@ -37,17 +38,23 @@ public class FunniesPlugin : BasePlugin, IPluginConfig<FunniesConfig>
 
     public FunniesConfig Config { get; set; } = new();
 
+    private const string CommandMoneyName = "css_money";
+    private const string CommandRconName = "css_rcon";
+
     public override void Load(bool hotReload)
     {
         Globals.Plugin = this;
+
+        if (hotReload)
+            Globals.Reset();
 
         RegisterListener<Listeners.CheckTransmit>(OnCheckTransmit);
 
         if (Config.InvisibleEnabled)
             RegisterListener<Listeners.OnTick>(OnTick);
 
-        AddCommand("css_money", "Gives a player money", CommandMoney.OnMoneyCommand);
-        AddCommand("css_rcon", "Runs a command", CommandRcon.OnRconCommand);
+        AddCommand(CommandMoneyName, "Gives a player money", CommandMoney.OnMoneyCommand);
+        AddCommand(CommandRconName, "Runs a command", CommandRcon.OnRconCommand);
 
         try
         {
@@ -59,10 +66,14 @@ public class FunniesPlugin : BasePlugin, IPluginConfig<FunniesConfig>
         }
         catch (Exception ex)
         {
-            Logger.LogError("Error setting up modules: {0}", ex);
+            Logger.LogError(ex, "Error setting up modules");
         }
 
-        Logger.LogInformation("FunniesPlugin loaded | Wallhack: {0}, Invisible: {1}", Config.WallhackEnabled, Config.InvisibleEnabled);
+        Logger.LogInformation(
+            "FunniesPlugin loaded | Wallhack: {0}, Invisible: {1}",
+            Config.WallhackEnabled,
+            Config.InvisibleEnabled
+        );
     }
 
     public override void Unload(bool hotReload)
@@ -77,10 +88,14 @@ public class FunniesPlugin : BasePlugin, IPluginConfig<FunniesConfig>
         }
         catch (Exception ex)
         {
-            Logger.LogError("Error during cleanup: {0}", ex);
+            Logger.LogError(ex, "Error during cleanup");
         }
 
-        Logger.LogInformation("FunniesPlugin unloaded");
+        Logger.LogInformation(
+            "FunniesPlugin unloaded | Wallhack: {0}, Invisible: {1}",
+            Config.WallhackEnabled,
+            Config.InvisibleEnabled
+        );
     }
 
     public void OnTick()
@@ -96,24 +111,27 @@ public class FunniesPlugin : BasePlugin, IPluginConfig<FunniesConfig>
             if (!Util.IsPlayerValid(player))
                 continue;
 
-            var validPlayer = player!;
-
             if (Config.WallhackEnabled)
-                Wallhack.OnPlayerTransmit(info, validPlayer);
+                Wallhack.OnPlayerTransmit(info, player!);
 
             if (Config.InvisibleEnabled)
-                Invisible.OnPlayerTransmit(info, validPlayer);
+                Invisible.OnPlayerTransmit(info, player!);
         }
     }
 
     public void OnConfigParsed(FunniesConfig config)
     {
-        // Validate RGB values
-        config.R = Math.Clamp(config.R, (byte)0, (byte)255);
-        config.G = Math.Clamp(config.G, (byte)0, (byte)255);
-        config.B = Math.Clamp(config.B, (byte)0, (byte)255);
+        Config.R = ClampByte(config.R);
+        Config.G = ClampByte(config.G);
+        Config.B = ClampByte(config.B);
 
-        Config = config;
-        Globals.Config = config;
+        Config.AdminPermission = config.AdminPermission;
+        Config.RconPermission = config.RconPermission;
+        Config.WallhackEnabled = config.WallhackEnabled;
+        Config.InvisibleEnabled = config.InvisibleEnabled;
+
+        Globals.Config = Config;
     }
+
+    private static byte ClampByte(byte value) => Math.Clamp(value, (byte)0, (byte)255);
 }

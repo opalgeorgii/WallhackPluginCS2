@@ -4,7 +4,7 @@ using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Utils;
 
-namespace Funnies;
+namespace WallhackPlugin;
 
 public static class Util
 {
@@ -84,10 +84,8 @@ public static class Util
     public static float Map(float value, float fromMin, float fromMax, float toMin, float toMax)
     {
         if (fromMax == fromMin) return toMin;
-
         float normalized = (value - fromMin) / (fromMax - fromMin);
         normalized = Math.Clamp(normalized, 0f, 1f);
-
         return toMin + normalized * (toMax - toMin);
     }
 

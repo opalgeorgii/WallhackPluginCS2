@@ -5,10 +5,10 @@ using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Memory;
 using CounterStrikeSharp.API.Modules.Utils;
-using Funnies.Commands;
-using Funnies.Models;
+using WallhackPlugin.Commands;
+using WallhackPlugin.Models;
 
-namespace Funnies.Modules;
+namespace WallhackPlugin.Modules;
 
 public class Invisible
 {
@@ -24,7 +24,7 @@ public class Invisible
             if (!Util.IsPlayerValid(owner))
                 continue;
 
-            if (owner != player)
+            if (owner.Slot != player.Slot)
                 info.TransmitEntities.Remove(entity);
         }
 
@@ -102,10 +102,8 @@ public class Invisible
             foreach (var weapon in pawn.WeaponServices!.MyWeapons)
             {
                 var w = weapon.Value!;
-
                 w.Render = Color.FromArgb((int)alpha, pawn.Render);
                 Utilities.SetStateChanged(w, "CBaseModelEntity", "m_clrRender");
-
                 w.ShadowStrength = alpha < 128f ? 1.0f : 0.0f;
                 Utilities.SetStateChanged(w, "CBaseModelEntity", "m_flShadowStrength");
             }
@@ -130,8 +128,7 @@ public class Invisible
     public static HookResult OnPlayerSound(EventPlayerSound @event, GameEventInfo info)
     {
         var player = @event.Userid;
-        if (!Util.IsPlayerValid(player))
-            return HookResult.Continue;
+        if (!Util.IsPlayerValid(player)) return HookResult.Continue;
 
         SetPlayerInvisibleFor(player, @event.Duration * 2);
 
@@ -147,8 +144,7 @@ public class Invisible
     public static HookResult OnPlayerShoot(EventBulletImpact @event, GameEventInfo info)
     {
         var player = @event.Userid;
-        if (!Util.IsPlayerValid(player))
-            return HookResult.Continue;
+        if (!Util.IsPlayerValid(player)) return HookResult.Continue;
 
         SetPlayerInvisibleFor(player, 0.5f);
 
@@ -176,8 +172,7 @@ public class Invisible
     public static HookResult OnPlayerHurt(EventPlayerHurt @event, GameEventInfo info)
     {
         var player = @event.Userid;
-        if (!Util.IsPlayerValid(player))
-            return HookResult.Continue;
+        if (!Util.IsPlayerValid(player)) return HookResult.Continue;
 
         SetPlayerInvisibleFor(player, 0.5f);
 

@@ -3,7 +3,7 @@ using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Admin;
 using CounterStrikeSharp.API.Modules.Commands;
 
-namespace Funnies.Commands;
+namespace WallhackPlugin.Commands;
 
 public class CommandRcon
 {

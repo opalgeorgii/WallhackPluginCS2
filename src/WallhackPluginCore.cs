@@ -1,13 +1,13 @@
 using System;
 using System.Text.Json.Serialization;
 using CounterStrikeSharp.API.Core;
-using Funnies.Commands;
+using WallhackPlugin.Commands;
 using Microsoft.Extensions.Logging;
-using Funnies.Modules;
+using WallhackPlugin.Modules;
 
-namespace Funnies;
+namespace WallhackPlugin;
 
-public class FunniesConfig : BasePluginConfig
+public class WallhackConfig : BasePluginConfig
 {
     [JsonPropertyName("ColorR")]
     public byte R { get; set; } = 255;
@@ -31,12 +31,12 @@ public class FunniesConfig : BasePluginConfig
     public bool InvisibleEnabled { get; set; } = true;
 }
 
-public class FunniesPlugin : BasePlugin, IPluginConfig<FunniesConfig>
+public class WallhackPluginCore : BasePlugin, IPluginConfig<WallhackConfig>
 {
-    public override string ModuleName => "Funny plugin";
-    public override string ModuleVersion => "0.0.1";
+    public override string ModuleName => "Wallhack Plugin";
+    public override string ModuleVersion => "1.0.0";
 
-    public FunniesConfig Config { get; set; } = new();
+    public WallhackConfig Config { get; set; } = new();
 
     private const string CommandMoneyName = "css_money";
     private const string CommandRconName = "css_rcon";
@@ -70,7 +70,7 @@ public class FunniesPlugin : BasePlugin, IPluginConfig<FunniesConfig>
         }
 
         Logger.LogInformation(
-            "FunniesPlugin loaded | Wallhack: {0}, Invisible: {1}",
+            "WallhackPlugin loaded | Wallhack: {0}, Invisible: {1}",
             Config.WallhackEnabled,
             Config.InvisibleEnabled
         );
@@ -92,7 +92,7 @@ public class FunniesPlugin : BasePlugin, IPluginConfig<FunniesConfig>
         }
 
         Logger.LogInformation(
-            "FunniesPlugin unloaded | Wallhack: {0}, Invisible: {1}",
+            "WallhackPlugin unloaded | Wallhack: {0}, Invisible: {1}",
             Config.WallhackEnabled,
             Config.InvisibleEnabled
         );
@@ -119,7 +119,7 @@ public class FunniesPlugin : BasePlugin, IPluginConfig<FunniesConfig>
         }
     }
 
-    public void OnConfigParsed(FunniesConfig config)
+    public void OnConfigParsed(WallhackConfig config)
     {
         Config.R = ClampByte(config.R);
         Config.G = ClampByte(config.G);

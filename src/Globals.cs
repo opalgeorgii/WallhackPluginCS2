@@ -1,20 +1,20 @@
 using System;
 using CounterStrikeSharp.API.Core;
-using Funnies.Models;
+using WallhackPlugin.Models;
 
-namespace Funnies;
+namespace WallhackPlugin;
 
 public static class Globals
 {
-    private static FunniesConfig? _config;
-    public static FunniesConfig Config
+    private static WallhackConfig? _config;
+    public static WallhackConfig Config
     {
         get => _config ?? throw new InvalidOperationException("Globals.Config not initialized");
         set => _config = value;
     }
 
-    private static FunniesPlugin? _plugin;
-    public static FunniesPlugin Plugin
+    private static WallhackPluginCore? _plugin;
+    public static WallhackPluginCore Plugin
     {
         get => _plugin ?? throw new InvalidOperationException("Globals.Plugin not initialized");
         set => _plugin = value;

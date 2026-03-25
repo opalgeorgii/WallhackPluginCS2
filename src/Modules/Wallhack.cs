@@ -2,10 +2,10 @@ using System.Drawing;
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Utils;
-using Funnies.Commands;
-using Funnies.Models;
+using WallhackPlugin.Commands;
+using WallhackPlugin.Models;
 
-namespace Funnies.Modules;
+namespace WallhackPlugin.Modules;
 
 public class Wallhack
 {
@@ -14,32 +14,15 @@ public class Wallhack
         if (!Util.IsPlayerValid(player))
             return;
 
-        // 🔥 CLEAN INVALID DATA (prevents crashes)
         foreach (var (target, data) in Globals.GlowData.ToList())
         {
-            if (!Util.IsPlayerValid(target) ||
-                data.GlowEnt == null || data.ModelRelay == null ||
-                !data.GlowEnt.IsValid || !data.ModelRelay.IsValid)
+            if (!Util.IsPlayerValid(target) || !data.GlowEnt.IsValid || !data.ModelRelay.IsValid)
             {
                 Globals.GlowData.Remove(target);
                 continue;
             }
-        }
 
-        foreach (var (target, data) in Globals.GlowData)
-        {
-            if (!Util.IsPlayerValid(target))
-                continue;
-
-            if (data.GlowEnt == null || data.ModelRelay == null ||
-                !data.GlowEnt.IsValid || !data.ModelRelay.IsValid)
-            {
-                info.TransmitEntities.Remove(data.ModelRelay);
-                info.TransmitEntities.Remove(data.GlowEnt);
-                continue;
-            }
-
-            if (target == player)
+            if (target.Slot == player.Slot)
             {
                 info.TransmitEntities.Remove(data.ModelRelay);
                 info.TransmitEntities.Remove(data.GlowEnt);
@@ -78,18 +61,11 @@ public class Wallhack
         if (!Util.IsPlayerValid(player))
             return HookResult.Continue;
 
-        // 🔥 ALWAYS CLEAN OLD ENTITIES
         RemoveGlow(player);
 
-        // 🔥 DELAY to ensure pawn is fully ready (CRITICAL)
-        Globals.Plugin.AddTimer(0.8f, () =>
+        Server.NextFrame(() =>
         {
-            if (!Util.IsPlayerValid(player)) return;
-            if (!player.PawnIsAlive) return;
-
-            var pawn = player.PlayerPawn?.Value;
-            if (pawn == null || !pawn.IsValid) return;
-
+            if (!Util.IsPlayerValid(player) || !player.PawnIsAlive) return;
             Glow(player);
         });
 
@@ -123,42 +99,31 @@ public class Wallhack
         if (!Globals.GlowData.TryGetValue(player, out var data))
             return;
 
-        if (data.GlowEnt != null && data.GlowEnt.IsValid)
-            data.GlowEnt.Remove();
-
-        if (data.ModelRelay != null && data.ModelRelay.IsValid)
-            data.ModelRelay.Remove();
+        if (data.GlowEnt.IsValid) data.GlowEnt.Remove();
+        if (data.ModelRelay.IsValid) data.ModelRelay.Remove();
 
         Globals.GlowData.Remove(player);
     }
 
     private static void Glow(CCSPlayerController player)
     {
-        // 🔥 PREVENT DUPLICATES
-        RemoveGlow(player);
-
         var pawn = player.PlayerPawn?.Value;
         if (pawn == null || !pawn.IsValid) return;
-
-        // Extra safety (prevents crash in rare cases)
-        if (pawn.LifeState != (byte)LifeState_t.LIFE_ALIVE)
-            return;
 
         var sceneNode = pawn.CBodyComponent?.SceneNode;
         if (sceneNode == null) return;
 
         var skeleton = sceneNode.GetSkeletonInstance();
-        if (skeleton == null) return;
+        if (skeleton == null || skeleton.ModelState == null) return;
 
-        string? model = skeleton?.ModelState?.ModelName;
-        if (string.IsNullOrWhiteSpace(model))
-            return;
+        string model = skeleton.ModelState.ModelName;
+        if (string.IsNullOrEmpty(model)) return;
 
-        var glowEntity = Utilities.CreateEntityByName<CDynamicProp>("prop_dynamic");
         var modelRelay = Utilities.CreateEntityByName<CDynamicProp>("prop_dynamic");
-        if (glowEntity == null || modelRelay == null) return;
+        var glowEntity = Utilities.CreateEntityByName<CDynamicProp>("prop_dynamic");
 
-        // Setup BEFORE spawn
+        if (modelRelay == null || glowEntity == null) return;
+
         modelRelay.Spawnflags = 256;
         modelRelay.Render = Color.Transparent;
         modelRelay.RenderMode = RenderMode_t.kRenderNone;
@@ -166,23 +131,23 @@ public class Wallhack
         glowEntity.Spawnflags = 256;
         glowEntity.Render = Color.FromArgb(1, 0, 0, 0);
 
-        // 🔥 CRITICAL FIX: set model BEFORE spawn
         modelRelay.SetModel(model);
         glowEntity.SetModel(model);
 
         modelRelay.DispatchSpawn();
         glowEntity.DispatchSpawn();
 
-        // Follow chain
         modelRelay.AcceptInput("FollowEntity", pawn, null, "!activator");
         glowEntity.AcceptInput("FollowEntity", modelRelay, null, "!activator");
 
-        // Glow setup
         glowEntity.Glow.GlowRange = 5000;
         glowEntity.Glow.GlowRangeMin = 0;
-        glowEntity.Glow.GlowColorOverride =
-            Color.FromArgb(255, Globals.Config.R, Globals.Config.G, Globals.Config.B);
-        glowEntity.Glow.GlowTeam = -1;
+        glowEntity.Glow.GlowColorOverride = Color.FromArgb(255, Globals.Config.R, Globals.Config.G, Globals.Config.B);
+
+        // THE FIX: Set the GlowTeam to the opposite team.
+        // This forces your own game client to hide the glow from you, even if the engine networks it.
+        glowEntity.Glow.GlowTeam = player.Team == CsTeam.Terrorist ? (int)CsTeam.CounterTerrorist : (int)CsTeam.Terrorist;
+
         glowEntity.Glow.GlowType = 3;
 
         Globals.GlowData[player] = new GlowData
@@ -204,13 +169,10 @@ public class Wallhack
 
     public static void Cleanup()
     {
-        foreach (var entity in Globals.GlowData)
+        foreach (var data in Globals.GlowData.Values)
         {
-            if (entity.Value.GlowEnt != null && entity.Value.GlowEnt.IsValid)
-                entity.Value.GlowEnt.Remove();
-
-            if (entity.Value.ModelRelay != null && entity.Value.ModelRelay.IsValid)
-                entity.Value.ModelRelay.Remove();
+            if (data.GlowEnt.IsValid) data.GlowEnt.Remove();
+            if (data.ModelRelay.IsValid) data.ModelRelay.Remove();
         }
 
         Globals.GlowData.Clear();

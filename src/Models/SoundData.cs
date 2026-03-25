@@ -1,12 +1,11 @@
-namespace Funnies.Models;
+namespace WallhackPlugin.Models;
 
 public struct SoundData
 {
     public float StartTime { get; set; }
     public float EndTime { get; set; }
     public bool HackyReload { get; set; }
-
-    public float RevealUntil { get; set; } // 👈 NEW
+    public float RevealUntil { get; set; }
 
     public SoundData(float startTime = -1f, float endTime = -1f)
     {

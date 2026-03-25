@@ -9,7 +9,7 @@ public class CommandWallhack
 {
     public static void OnWallhackCommand(CCSPlayerController? caller, CommandInfo command)
     {
-        if (caller == null || !caller.IsValid)
+        if (!Util.IsPlayerValid(caller))
             return;
 
         if (!AdminManager.PlayerHasPermissions(caller, Globals.Config.AdminPermission))
@@ -18,32 +18,18 @@ public class CommandWallhack
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(command.ArgString))
+        string query = command.ArgString.Trim();
+        if (string.IsNullOrWhiteSpace(query))
         {
-            Util.ServerPrintToChat(caller, "Usage: !wh <player_name> | !wallhack <player_name>");
+            Util.ServerPrintToChat(caller, "Usage: !wh <player> | !wallhack <player>");
             return;
         }
 
-        string targetName = command.ArgString.Trim();
-
-        var matchingPlayers = Util.GetPlayersByPartialName(targetName)
-            .Where(p => !p.IsBot)
-            .ToList();
-
-        if (matchingPlayers.Count == 0)
+        if (!Util.TryResolveSinglePlayer(query, out var target, out var error, includeBots: true) || target == null)
         {
-            Util.ServerPrintToChat(caller, $"No valid player found matching '{targetName}'.");
+            Util.ServerPrintToChat(caller, error);
             return;
         }
-
-        if (matchingPlayers.Count > 1)
-        {
-            string names = string.Join(", ", matchingPlayers.Select(p => p.PlayerName));
-            Util.ServerPrintToChat(caller, $"Multiple matches: {names}. Be more specific.");
-            return;
-        }
-
-        var target = matchingPlayers[0];
 
         if (Globals.Wallhackers.Contains(target))
         {

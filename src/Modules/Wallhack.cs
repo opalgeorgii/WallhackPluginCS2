@@ -9,38 +9,37 @@ namespace WallhackPlugin.Modules;
 
 public class Wallhack
 {
-    public static void OnPlayerTransmit(CCheckTransmitInfo info, CCSPlayerController player)
+    private static readonly HashSet<int> PendingGlowSlots = new();
+
+    public static void OnPlayerTransmit(CCheckTransmitInfo info, CCSPlayerController viewer)
     {
-        if (!Util.IsPlayerValid(player))
+        if (!Util.IsPlayerValid(viewer))
             return;
 
         foreach (var (target, data) in Globals.GlowData.ToList())
         {
-            if (!Util.IsPlayerValid(target) || !data.GlowEnt.IsValid || !data.ModelRelay.IsValid)
+            if (!Util.IsPlayerEntityValid(target) || !data.GlowEnt.IsValid || !data.ModelRelay.IsValid)
             {
-                Globals.GlowData.Remove(target);
+                RemoveGlow(target);
                 continue;
             }
 
-            if (target.Slot == player.Slot)
+            if (target.Slot == viewer.Slot || !target.PawnIsAlive)
             {
                 info.TransmitEntities.Remove(data.ModelRelay);
                 info.TransmitEntities.Remove(data.GlowEnt);
                 continue;
             }
 
-            bool isInvisible = Globals.InvisiblePlayers.ContainsKey(target);
-            bool isRevealed = false;
-
-            if (isInvisible && Globals.InvisiblePlayers.TryGetValue(target, out var invisData))
-                isRevealed = Server.CurrentTime <= invisData.RevealUntil;
+            bool isInvisible = Globals.InvisiblePlayers.TryGetValue(target, out var invisData);
+            bool isRevealed = !isInvisible || Server.CurrentTime <= invisData.RevealUntil;
 
             bool shouldSee =
-                Globals.Wallhackers.Contains(player) &&
-                target.Team != player.Team &&
-                player.Team != CsTeam.Spectator &&
+                Globals.Wallhackers.Contains(viewer) &&
+                viewer.Team != CsTeam.Spectator &&
                 target.Team != CsTeam.Spectator &&
-                (!isInvisible || isRevealed);
+                target.Team != viewer.Team &&
+                isRevealed;
 
             if (shouldSee)
             {
@@ -58,28 +57,23 @@ public class Wallhack
     public static HookResult OnPlayerSpawn(EventPlayerSpawn @event, GameEventInfo info)
     {
         var player = @event.Userid;
-        if (!Util.IsPlayerValid(player))
+        if (!Util.IsPlayerEntityValid(player))
             return HookResult.Continue;
 
-        RemoveGlow(player);
-
-        Server.NextFrame(() =>
-        {
-            if (!Util.IsPlayerValid(player) || !player.PawnIsAlive) return;
-            Glow(player);
-        });
-
+        ScheduleGlow(player);
         return HookResult.Continue;
     }
 
     public static HookResult OnPlayerDisconnect(EventPlayerDisconnect @event, GameEventInfo info)
     {
         var player = @event.Userid;
-        if (!Util.IsPlayerValid(player))
+        if (player == null)
             return HookResult.Continue;
 
+        PendingGlowSlots.Remove(player.Slot);
         RemoveGlow(player);
         Globals.Wallhackers.Remove(player);
+        Globals.InvisiblePlayers.Remove(player);
 
         return HookResult.Continue;
     }
@@ -87,11 +81,33 @@ public class Wallhack
     public static HookResult OnPlayerDeath(EventPlayerDeath @event, GameEventInfo info)
     {
         var player = @event.Userid;
-        if (!Util.IsPlayerValid(player))
+        if (player == null)
             return HookResult.Continue;
 
+        PendingGlowSlots.Remove(player.Slot);
         RemoveGlow(player);
+
         return HookResult.Continue;
+    }
+
+    private static void ScheduleGlow(CCSPlayerController player)
+    {
+        PendingGlowSlots.Remove(player.Slot);
+        RemoveGlow(player);
+
+        if (!PendingGlowSlots.Add(player.Slot))
+            return;
+
+        Globals.Plugin.AddTimer(0.20f, () =>
+        {
+            PendingGlowSlots.Remove(player.Slot);
+
+            if (!Util.IsPlayerValid(player) || !player.PawnIsAlive)
+                return;
+
+            RemoveGlow(player);
+            CreateGlow(player);
+        });
     }
 
     private static void RemoveGlow(CCSPlayerController player)
@@ -99,30 +115,33 @@ public class Wallhack
         if (!Globals.GlowData.TryGetValue(player, out var data))
             return;
 
-        if (data.GlowEnt.IsValid) data.GlowEnt.Remove();
-        if (data.ModelRelay.IsValid) data.ModelRelay.Remove();
+        if (data.GlowEnt.IsValid)
+            data.GlowEnt.Remove();
+
+        if (data.ModelRelay.IsValid)
+            data.ModelRelay.Remove();
 
         Globals.GlowData.Remove(player);
     }
 
-    private static void Glow(CCSPlayerController player)
+    private static void CreateGlow(CCSPlayerController player)
     {
+        if (Globals.GlowData.ContainsKey(player))
+            return;
+
         var pawn = player.PlayerPawn?.Value;
-        if (pawn == null || !pawn.IsValid) return;
+        if (pawn == null || !pawn.IsValid || !player.PawnIsAlive)
+            return;
 
-        var sceneNode = pawn.CBodyComponent?.SceneNode;
-        if (sceneNode == null) return;
-
-        var skeleton = sceneNode.GetSkeletonInstance();
-        if (skeleton == null || skeleton.ModelState == null) return;
-
-        string model = skeleton.ModelState.ModelName;
-        if (string.IsNullOrEmpty(model)) return;
+        string? model = Util.GetPlayerModel(player);
+        if (string.IsNullOrWhiteSpace(model) || !model.EndsWith(".vmdl", StringComparison.OrdinalIgnoreCase))
+            return;
 
         var modelRelay = Utilities.CreateEntityByName<CDynamicProp>("prop_dynamic");
         var glowEntity = Utilities.CreateEntityByName<CDynamicProp>("prop_dynamic");
 
-        if (modelRelay == null || glowEntity == null) return;
+        if (modelRelay == null || glowEntity == null)
+            return;
 
         modelRelay.Spawnflags = 256;
         modelRelay.Render = Color.Transparent;
@@ -137,17 +156,12 @@ public class Wallhack
         modelRelay.DispatchSpawn();
         glowEntity.DispatchSpawn();
 
-        modelRelay.AcceptInput("FollowEntity", pawn, null, "!activator");
-        glowEntity.AcceptInput("FollowEntity", modelRelay, null, "!activator");
-
         glowEntity.Glow.GlowRange = 5000;
         glowEntity.Glow.GlowRangeMin = 0;
         glowEntity.Glow.GlowColorOverride = Color.FromArgb(255, Globals.Config.R, Globals.Config.G, Globals.Config.B);
-
-        // THE FIX: Set the GlowTeam to the opposite team.
-        // This forces your own game client to hide the glow from you, even if the engine networks it.
-        glowEntity.Glow.GlowTeam = player.Team == CsTeam.Terrorist ? (int)CsTeam.CounterTerrorist : (int)CsTeam.Terrorist;
-
+        glowEntity.Glow.GlowTeam = player.Team == CsTeam.Terrorist
+            ? (int)CsTeam.CounterTerrorist
+            : (int)CsTeam.Terrorist;
         glowEntity.Glow.GlowType = 3;
 
         Globals.GlowData[player] = new GlowData
@@ -155,6 +169,24 @@ public class Wallhack
             GlowEnt = glowEntity,
             ModelRelay = modelRelay
         };
+
+        Server.NextFrame(() =>
+        {
+            if (!Util.IsPlayerValid(player) || !player.PawnIsAlive)
+            {
+                RemoveGlow(player);
+                return;
+            }
+
+            if (!modelRelay.IsValid || !glowEntity.IsValid || pawn == null || !pawn.IsValid)
+            {
+                RemoveGlow(player);
+                return;
+            }
+
+            modelRelay.AcceptInput("FollowEntity", pawn, modelRelay, "!activator");
+            glowEntity.AcceptInput("FollowEntity", modelRelay, glowEntity, "!activator");
+        });
     }
 
     public static void Setup()
@@ -165,14 +197,27 @@ public class Wallhack
 
         Globals.Plugin.AddCommand("css_wh", "Gives a player walls", CommandWallhack.OnWallhackCommand);
         Globals.Plugin.AddCommand("css_wallhack", "Gives a player walls", CommandWallhack.OnWallhackCommand);
+        Globals.Plugin.AddCommand("wh", "Gives a player walls", CommandWallhack.OnWallhackCommand);
+        Globals.Plugin.AddCommand("wallhack", "Gives a player walls", CommandWallhack.OnWallhackCommand);
+
+        Globals.Plugin.AddTimer(0.50f, () =>
+        {
+            foreach (var player in Util.GetValidPlayers().Where(p => p.PawnIsAlive))
+                ScheduleGlow(player);
+        });
     }
 
     public static void Cleanup()
     {
+        PendingGlowSlots.Clear();
+
         foreach (var data in Globals.GlowData.Values)
         {
-            if (data.GlowEnt.IsValid) data.GlowEnt.Remove();
-            if (data.ModelRelay.IsValid) data.ModelRelay.Remove();
+            if (data.GlowEnt.IsValid)
+                data.GlowEnt.Remove();
+
+            if (data.ModelRelay.IsValid)
+                data.ModelRelay.Remove();
         }
 
         Globals.GlowData.Clear();

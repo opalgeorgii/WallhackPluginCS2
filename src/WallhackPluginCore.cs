@@ -1,8 +1,8 @@
 using System;
 using System.Text.Json.Serialization;
 using CounterStrikeSharp.API.Core;
-using WallhackPlugin.Commands;
 using Microsoft.Extensions.Logging;
+using WallhackPlugin.Commands;
 using WallhackPlugin.Modules;
 
 namespace WallhackPlugin;
@@ -34,12 +34,14 @@ public class WallhackConfig : BasePluginConfig
 public class WallhackPluginCore : BasePlugin, IPluginConfig<WallhackConfig>
 {
     public override string ModuleName => "Wallhack Plugin";
-    public override string ModuleVersion => "1.0.0";
+    public override string ModuleVersion => "1.1.0";
 
     public WallhackConfig Config { get; set; } = new();
 
     private const string CommandMoneyName = "css_money";
+    private const string CommandMoneyAlias = "money";
     private const string CommandRconName = "css_rcon";
+    private const string CommandRconAlias = "rcon";
 
     public override void Load(bool hotReload)
     {
@@ -54,7 +56,10 @@ public class WallhackPluginCore : BasePlugin, IPluginConfig<WallhackConfig>
             RegisterListener<Listeners.OnTick>(OnTick);
 
         AddCommand(CommandMoneyName, "Gives a player money", CommandMoney.OnMoneyCommand);
+        AddCommand(CommandMoneyAlias, "Gives a player money", CommandMoney.OnMoneyCommand);
+
         AddCommand(CommandRconName, "Runs a command", CommandRcon.OnRconCommand);
+        AddCommand(CommandRconAlias, "Runs a command", CommandRcon.OnRconCommand);
 
         try
         {
@@ -70,7 +75,7 @@ public class WallhackPluginCore : BasePlugin, IPluginConfig<WallhackConfig>
         }
 
         Logger.LogInformation(
-            "WallhackPlugin loaded | Wallhack: {0}, Invisible: {1}",
+            "WallhackPlugin loaded | Wallhack: {WallhackEnabled}, Invisible: {InvisibleEnabled}",
             Config.WallhackEnabled,
             Config.InvisibleEnabled
         );
@@ -92,7 +97,7 @@ public class WallhackPluginCore : BasePlugin, IPluginConfig<WallhackConfig>
         }
 
         Logger.LogInformation(
-            "WallhackPlugin unloaded | Wallhack: {0}, Invisible: {1}",
+            "WallhackPlugin unloaded | Wallhack: {WallhackEnabled}, Invisible: {InvisibleEnabled}",
             Config.WallhackEnabled,
             Config.InvisibleEnabled
         );

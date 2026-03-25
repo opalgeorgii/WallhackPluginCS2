@@ -1,52 +1,54 @@
 # Wallhack Plugin
 
+[![Donate](https://img.shields.io/badge/Support-Donatello-blue)](https://donatello.to/opalgeorgii)
+
 ## Overview
 
-This plugin recreates the **1v5 with wallhack** and **Invisible Man** style gameplay for **Counter-Strike 2**, inspired by videos from **dima_wallhacks** and **renyan**.
+This plugin recreates the **1v5 wallhack** and **Invisible Man** style gameplay for **Counter-Strike 2**, inspired by videos from **dima_wallhacks** and **renyan**.
 
-This code was heavily inspired by the original [FunnyPlugin](https://github.com/robieless/FunnyPlugin), but it was **reworked, fixed, and cleaned up** so the main features work much more smoothly in practice.
+This project was heavily inspired by the original [FunnyPlugin](https://github.com/robieless/FunnyPlugin), but it was reworked and fixed to improve stability, command handling, rendering behavior, permissions, and overall usability.
 
-For a full CS2 server installation guide, see: [autoconfigcopier](https://github.com/opalgeorgii/autoconfigcopier)
+For a full CS2 server installation and setup guide, see: [autoconfigcopier](https://github.com/opalgeorgii/autoconfigcopier)
 
 ---
 
-## What was fixed and reworked
+## Main improvements and fixes
 
-Compared to the original inspiration, this version includes major fixes and improvements:
+Compared to the original inspiration, this version includes major fixes and reworks such as:
 
-- fixed **RCON**, which previously did not work correctly
+- fixed **RCON**, which previously was not working correctly
 - fixed multiple bugs that could lead to **server crashes**
-- improved **invisibility rendering and behavior**
+- improved **invisibility rendering**
 - fixed cases where invisible players still showed:
-  - shadows
+  - world shadows
   - weapons
   - grenades
   - knives
-- improved command handling and usability
-- added command aliases
-- added partial player name matching
-- improved permission handling
-- reduced unnecessary overhead and improved general plugin behavior
+- improved command usability with:
+  - command aliases
+  - partial name matching
+  - better admin permission handling
+- improved general plugin structure and behavior
 
 ---
 
 ## Installation
 
 1. Install [CounterStrikeSharp](https://docs.cssharp.dev/docs/guides/getting-started.html) on your server.
-2. Download the plugin from the **Releases** page of this repository.
-3. Place it in:
+2. Download this plugin from the **Releases** page.
+3. Put the plugin files into:
 
 ```text
 server/game/csgo/addons/counterstrikesharp/plugins/WallhackPlugin
 ```
 
-4. Launch the server once so the plugin generates its config file.
+4. Launch the server once so the plugin generates its config.
 
 ---
 
 ## Admin setup
 
-To use the commands, add players as admins in:
+To use the commands, add the player as an admin in:
 
 ```text
 server/game/csgo/addons/counterstrikesharp/configs/admins.json
@@ -76,6 +78,7 @@ By default:
   - `!invis`
   - `!invisible`
   - `!money`
+
 - `@css/rcon` is required for:
   - `!rcon`
 
@@ -91,29 +94,33 @@ You can change these permission strings later in the plugin config without recom
 - `!wallhack <playername>`
 
 You can also use a **partial player name**.
-In many cases, the **first letter is enough** if it uniquely matches one player.
-If 2 or more players match, type more letters until the name becomes unique.
 
-Examples:
+In many cases, the **first letter is enough** if it uniquely matches one player.
+
+Example:
 
 ```text
 !wh a
-!wallhack ava
 ```
+
+If multiple players match the same partial name, type more letters until it becomes unique.
+
+---
 
 ### Invisibility
 
 - `!invis <playername>`
 - `!invisible <playername>`
 
-Partial player names work here too.
+You can also use a **partial player name** the same way as wallhack.
 
-Examples:
+Example:
 
 ```text
-!invis a
-!invisible ava
+!invis av
 ```
+
+---
 
 ### Money
 
@@ -126,6 +133,8 @@ Example:
 ```text
 !money 16000 ava
 ```
+
+---
 
 ### RCON
 
@@ -176,22 +185,17 @@ You do **not** need to recompile the code to change these values.
 
 ## Notes
 
-- Player-based commands support partial name matching.
-- If multiple players match the same partial name, enter more letters.
-- The `Enemy: <name>` target-ID text is controlled client-side. Players who want it hidden need to disable it on their own client.
-- The current wallhack implementation works, but on some setups the helper-entity method may still print engine assertions in the server console when players spawn or respawn.
+- The plugin supports partial name matching for player-based commands.
+- If a partial name matches more than one player, be more specific.
+- The target-name HUD text (`Enemy: <name>`) is controlled client-side, so players who want it hidden need to disable it on their own client.
 
 ---
 
-## Support the project
+## Support
 
-If this repository helped you and you want to support development, you can add any of these links here later:
+If you wish to support me, you can donate here:
 
-- **Monobank Jar:** `https://send.monobank.ua/jar/YOUR_JAR_ID`
-- **Patreon:** `https://patreon.com/YOUR_NAME`
-- **WayForPay payment link/page:** `YOUR_LINK_HERE`
-- **LiqPay payment link/page:** `YOUR_LINK_HERE`
-- **Fondy payment link/page:** `YOUR_LINK_HERE`
+**[Donate via Donatello](https://donatello.to/opalgeorgii)**
 
 ---
 
@@ -204,4 +208,4 @@ If this repository helped you and you want to support development, you can add a
 
 ## Contact
 
-If you find bugs or want to suggest improvements, open an issue in this repository.
+If you find bugs or want to suggest improvements, open an issue in the repository.

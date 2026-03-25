@@ -1,14 +1,14 @@
-# Wallhack Plugin
+# Wallhack Plugin 2026
 
 [![Donate](https://img.shields.io/badge/Support-Donatello-blue)](https://donatello.to/opalgeorgii)
 
 ## Overview
 
-This plugin recreates the **1v5 wallhack** and **Invisible Man** style gameplay for **Counter-Strike 2**, inspired by videos from **dima_wallhacks** and **renyan**.
+This plugin recreates the **1 vs 5 wallhack** and **Invisible Man** style gameplay for **Counter-Strike 2**, inspired by videos from **dima_wallhacks**.
 
-This project was heavily inspired by the original [FunnyPlugin](https://github.com/robieless/FunnyPlugin), but it was reworked and fixed to improve stability, command handling, rendering behavior, permissions, and overall usability.
+This project was heavily inspired by the original [FunnyPlugin](https://github.com/robieless/FunnyPlugin), but it was significantly reworked and fixed so that **wallhack** and **invisibility** work as intended, **RCON** works properly, and the overall plugin is more stable, cleaner, and easier to use.
 
-For a full CS2 server installation and setup guide, see: [autoconfigcopier](https://github.com/opalgeorgii/autoconfigcopier)
+For a full CS2 server installation guide, please visit my other repository: [autoconfigcopier](https://github.com/opalgeorgii/autoconfigcopier)
 
 ---
 
@@ -16,19 +16,18 @@ For a full CS2 server installation and setup guide, see: [autoconfigcopier](http
 
 Compared to the original inspiration, this version includes major fixes and reworks such as:
 
+- fixed and reworked **Wallhack**
+- fixed and reworked **Invisibility**
+- invisible players no longer cast their player-model shadows for other players
+- invisible players no longer expose their world weapons, grenades, knives, or related world rendering to other players
+- wallhack correctly reveals invisible enemies only for a limited time when they make a sound
 - fixed **RCON**, which previously was not working correctly
 - fixed multiple bugs that could lead to **server crashes**
-- improved **invisibility rendering**
-- fixed cases where invisible players still showed:
-  - world shadows
-  - weapons
-  - grenades
-  - knives
-- improved command usability with:
+- improved command handling with:
   - command aliases
   - partial name matching
-  - better admin permission handling
-- improved general plugin structure and behavior
+  - better permission handling
+- improved overall structure, stability, and usability
 
 ---
 
@@ -42,7 +41,10 @@ Compared to the original inspiration, this version includes major fixes and rewo
 server/game/csgo/addons/counterstrikesharp/plugins/WallhackPlugin
 ```
 
-4. Launch the server once so the plugin generates its config.
+4. If the `WallhackPlugin` folder does not exist, create it manually.
+5. Launch the server once so the plugin generates its config.
+
+For a full server installation and setup guide, please visit: [autoconfigcopier](https://github.com/opalgeorgii/autoconfigcopier)
 
 ---
 
@@ -187,7 +189,12 @@ You do **not** need to recompile the code to change these values.
 
 - The plugin supports partial name matching for player-based commands.
 - If a partial name matches more than one player, be more specific.
-- The target-name HUD text (`Enemy: <name>`) is controlled client-side, so players who want it hidden need to disable it on their own client.
+- The target-name HUD text (`Enemy: <name>`) is controlled client-side.
+- To hide that text, the player needs to disable it manually in the client console with:
+
+```text
+hud_showtargetid 0
+```
 
 ---
 

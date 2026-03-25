@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.Linq;
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Utils;
@@ -178,13 +179,20 @@ public class Wallhack
                 return;
             }
 
-            if (!modelRelay.IsValid || !glowEntity.IsValid || pawn == null || !pawn.IsValid)
+            if (!modelRelay.IsValid || !glowEntity.IsValid)
             {
                 RemoveGlow(player);
                 return;
             }
 
-            modelRelay.AcceptInput("FollowEntity", pawn, modelRelay, "!activator");
+            var livePawn = player.PlayerPawn?.Value;
+            if (livePawn == null || !livePawn.IsValid)
+            {
+                RemoveGlow(player);
+                return;
+            }
+
+            modelRelay.AcceptInput("FollowEntity", livePawn, modelRelay, "!activator");
             glowEntity.AcceptInput("FollowEntity", modelRelay, glowEntity, "!activator");
         });
     }

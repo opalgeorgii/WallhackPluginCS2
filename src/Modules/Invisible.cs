@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.Linq;
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using WallhackPlugin.Commands;
@@ -15,10 +16,13 @@ public class Invisible
         if (!Util.IsPlayerValid(viewer))
             return;
 
-        foreach (var (entity, owner) in HiddenEntities)
+        foreach (var (entity, owner) in HiddenEntities.ToList())
         {
             if (!entity.IsValid || !Util.IsPlayerEntityValid(owner))
+            {
+                HiddenEntities.Remove(entity);
                 continue;
+            }
 
             if (owner.Slot != viewer.Slot)
                 info.TransmitEntities.Remove(entity);
@@ -29,20 +33,21 @@ public class Invisible
     {
         HiddenEntities.Clear();
 
-        foreach (var (owner, _) in Globals.InvisiblePlayers.ToList())
+        foreach (var owner in Globals.InvisiblePlayers.Keys.ToList())
         {
-            if (!Util.IsPlayerValid(owner) || !owner.PawnIsAlive)
+            if (!Util.IsPlayerEntityValid(owner) ||
+                owner.Connected != PlayerConnectedState.PlayerConnected)
             {
                 Globals.InvisiblePlayers.Remove(owner);
                 continue;
             }
 
+            if (!owner.PawnIsAlive)
+                continue;
+
             var pawn = owner.PlayerPawn?.Value;
             if (pawn == null || !pawn.IsValid)
-            {
-                Globals.InvisiblePlayers.Remove(owner);
                 continue;
-            }
 
             var data = Globals.InvisiblePlayers[owner];
 
@@ -60,12 +65,12 @@ public class Invisible
             ApplyPawnVisuals(pawn, alphaByte);
             ApplyWeaponVisuals(pawn, alphaByte);
 
-            bool hideFromOthers = Server.CurrentTime > data.RevealUntil;
+            bool fullyHiddenFromOthers = Server.CurrentTime > data.RevealUntil;
 
             pawn.EntitySpottedState.Spotted = false;
             pawn.EntitySpottedState.SpottedByMask[0] = 0;
 
-            if (hideFromOthers)
+            if (fullyHiddenFromOthers)
             {
                 HiddenEntities[pawn] = owner;
 
@@ -84,6 +89,42 @@ public class Invisible
 
             Globals.InvisiblePlayers[owner] = data;
         }
+    }
+
+    public static HookResult OnPlayerSpawn(EventPlayerSpawn @event, GameEventInfo info)
+    {
+        var player = @event.Userid;
+        if (!Util.IsPlayerValid(player))
+            return HookResult.Continue;
+
+        if (!Globals.InvisiblePlayers.ContainsKey(player))
+            return HookResult.Continue;
+
+        ResetInvisibleState(player);
+
+        Server.NextFrame(() =>
+        {
+            if (!Util.IsPlayerValid(player) || !player.PawnIsAlive)
+                return;
+
+            var pawn = player.PlayerPawn?.Value;
+            if (pawn == null || !pawn.IsValid)
+                return;
+
+            ApplyPawnVisuals(pawn, 0);
+            ApplyWeaponVisuals(pawn, 0);
+        });
+
+        return HookResult.Continue;
+    }
+
+    public static HookResult OnPlayerDisconnect(EventPlayerDisconnect @event, GameEventInfo info)
+    {
+        var player = @event.Userid;
+        if (player != null)
+            Globals.InvisiblePlayers.Remove(player);
+
+        return HookResult.Continue;
     }
 
     public static HookResult OnPlayerSound(EventPlayerSound @event, GameEventInfo info)
@@ -147,6 +188,19 @@ public class Invisible
         }
 
         return HookResult.Continue;
+    }
+
+    private static void ResetInvisibleState(CCSPlayerController player)
+    {
+        if (!Globals.InvisiblePlayers.TryGetValue(player, out var data))
+            return;
+
+        data.StartTime = Server.CurrentTime - 0.01f;
+        data.EndTime = Server.CurrentTime - 0.01f;
+        data.HackyReload = false;
+        data.RevealUntil = 0f;
+
+        Globals.InvisiblePlayers[player] = data;
     }
 
     private static void HandleReloadReveal(CCSPlayerPawn pawn, ref SoundData data)
@@ -251,6 +305,8 @@ public class Invisible
         Globals.Plugin.RegisterEventHandler<EventPlayerSound>(OnPlayerSound);
         Globals.Plugin.RegisterEventHandler<EventBombBegindefuse>(OnPlayerStartDefuse);
         Globals.Plugin.RegisterEventHandler<EventPlayerHurt>(OnPlayerHurt);
+        Globals.Plugin.RegisterEventHandler<EventPlayerSpawn>(OnPlayerSpawn, HookMode.Post);
+        Globals.Plugin.RegisterEventHandler<EventPlayerDisconnect>(OnPlayerDisconnect);
 
         Globals.Plugin.AddCommand("css_invisible", "Makes a player invisible", CommandInvisible.OnInvisibleCommand);
         Globals.Plugin.AddCommand("css_invis", "Makes a player invisible", CommandInvisible.OnInvisibleCommand);

@@ -4,7 +4,7 @@
 
 ## Overview
 
-This plugin recreates the **1 vs 5 wallhack** and **Invisible Man** style gameplay for **Counter-Strike 2**, inspired by videos from **dima_wallhacks**.
+This plugin recreates the **1 vs 5 wallhack** and **Invisible** style gameplay for **Counter-Strike 2**, inspired by videos from **dima_wallhacks**.
 
 This project was heavily inspired by the original [FunnyPlugin](https://github.com/robieless/FunnyPlugin), but it was significantly reworked and fixed so that **wallhack** and **invisibility** work as intended, **RCON** works properly, and the overall plugin is more stable, cleaner, and easier to use.
 

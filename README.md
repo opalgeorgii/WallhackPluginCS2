@@ -8,7 +8,7 @@ This plugin recreates the **1 vs 5 wallhack** and **Invisible** style gameplay f
 
 This project was heavily inspired by the original [FunnyPlugin](https://github.com/robieless/FunnyPlugin), but it was significantly reworked and fixed so that **wallhack** and **invisibility** work as intended, **RCON** works properly, and the overall plugin is more stable, cleaner, and easier to use.
 
-For a full CS2 server installation guide, please visit my other repository: [autoconfigcopier](https://github.com/opalgeorgii/autoconfigcopier)
+For a full CS2 server installation guide, please visit my other repository: [autoconfigcopier](https://github.com/opalgeorgii/auto_configs_copier)
 
 ---
 
@@ -44,7 +44,7 @@ server/game/csgo/addons/counterstrikesharp/plugins/WallhackPlugin
 4. If the `WallhackPlugin` folder does not exist, create it manually.
 5. Launch the server once so the plugin generates its config.
 
-For a full server installation and setup guide, please visit: [autoconfigcopier](https://github.com/opalgeorgii/autoconfigcopier)
+For a full server installation and setup guide, please visit: [autoconfigcopier](https://github.com/opalgeorgii/auto_configs_copier)
 
 ---
 
@@ -209,7 +209,7 @@ If you wish to support me, you can donate here:
 ## Credits
 
 - Original inspiration: [robieless/FunnyPlugin](https://github.com/robieless/FunnyPlugin)
-- Server setup guide: [opalgeorgii/autoconfigcopier](https://github.com/opalgeorgii/autoconfigcopier)
+- Server setup guide: [opalgeorgii/autoconfigcopier](https://github.com/opalgeorgii/auto_configs_copier)
 
 ---
 

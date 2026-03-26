@@ -1,6 +1,6 @@
 using CounterStrikeSharp.API.Core;
 
-namespace WallhackPlugin.Models;
+namespace WallhackPluginCS2.Models;
 
 public class GlowData
 {

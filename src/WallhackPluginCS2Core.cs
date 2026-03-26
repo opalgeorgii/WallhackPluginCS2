@@ -2,10 +2,10 @@ using System;
 using System.Text.Json.Serialization;
 using CounterStrikeSharp.API.Core;
 using Microsoft.Extensions.Logging;
-using WallhackPlugin.Commands;
-using WallhackPlugin.Modules;
+using WallhackPluginCS2.Commands;
+using WallhackPluginCS2.Modules;
 
-namespace WallhackPlugin;
+namespace WallhackPluginCS2;
 
 public class WallhackConfig : BasePluginConfig
 {
@@ -31,7 +31,7 @@ public class WallhackConfig : BasePluginConfig
     public bool InvisibleEnabled { get; set; } = true;
 }
 
-public class WallhackPluginCore : BasePlugin, IPluginConfig<WallhackConfig>
+public class WallhackPluginCS2Core : BasePlugin, IPluginConfig<WallhackConfig>
 {
     public override string ModuleName => "Wallhack Plugin";
     public override string ModuleVersion => "1.1.0";
@@ -75,7 +75,7 @@ public class WallhackPluginCore : BasePlugin, IPluginConfig<WallhackConfig>
         }
 
         Logger.LogInformation(
-            "WallhackPlugin loaded | Wallhack: {WallhackEnabled}, Invisible: {InvisibleEnabled}",
+            "WallhackPluginCS2 loaded | Wallhack: {WallhackEnabled}, Invisible: {InvisibleEnabled}",
             Config.WallhackEnabled,
             Config.InvisibleEnabled
         );
@@ -97,7 +97,7 @@ public class WallhackPluginCore : BasePlugin, IPluginConfig<WallhackConfig>
         }
 
         Logger.LogInformation(
-            "WallhackPlugin unloaded | Wallhack: {WallhackEnabled}, Invisible: {InvisibleEnabled}",
+            "WallhackPluginCS2 unloaded | Wallhack: {WallhackEnabled}, Invisible: {InvisibleEnabled}",
             Config.WallhackEnabled,
             Config.InvisibleEnabled
         );

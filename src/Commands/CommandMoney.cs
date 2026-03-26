@@ -3,7 +3,7 @@ using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Admin;
 using CounterStrikeSharp.API.Modules.Commands;
 
-namespace WallhackPlugin.Commands;
+namespace WallhackPluginCS2.Commands;
 
 public class CommandMoney
 {

@@ -1,8 +1,8 @@
 using System;
 using CounterStrikeSharp.API.Core;
-using WallhackPlugin.Models;
+using WallhackPluginCS2.Models;
 
-namespace WallhackPlugin;
+namespace WallhackPluginCS2;
 
 public static class Globals
 {
@@ -13,8 +13,8 @@ public static class Globals
         set => _config = value;
     }
 
-    private static WallhackPluginCore? _plugin;
-    public static WallhackPluginCore Plugin
+    private static WallhackPluginCS2Core? _plugin;
+    public static WallhackPluginCS2Core Plugin
     {
         get => _plugin ?? throw new InvalidOperationException("Globals.Plugin not initialized");
         set => _plugin = value;

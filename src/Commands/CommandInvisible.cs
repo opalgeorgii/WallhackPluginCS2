@@ -3,9 +3,9 @@ using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Admin;
 using CounterStrikeSharp.API.Modules.Commands;
-using WallhackPlugin.Models;
+using WallhackPluginCS2.Models;
 
-namespace WallhackPlugin.Commands;
+namespace WallhackPluginCS2.Commands;
 
 public class CommandInvisible
 {

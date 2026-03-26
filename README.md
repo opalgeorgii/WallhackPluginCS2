@@ -38,10 +38,10 @@ Compared to the original inspiration, this version includes major fixes and rewo
 3. Put the plugin files into:
 
 ```text
-server/game/csgo/addons/counterstrikesharp/plugins/WallhackPlugin
+server/game/csgo/addons/counterstrikesharp/plugins/WallhackPluginCS2
 ```
 
-4. If the `WallhackPlugin` folder does not exist, create it manually.
+4. If the `WallhackPluginCS2` folder does not exist, create it manually.
 5. Launch the server once so the plugin generates its config.
 
 For a full server installation and setup guide, please visit: [auto_configs_copier](https://github.com/opalgeorgii/auto_configs_copier)
@@ -155,7 +155,7 @@ Example:
 After the first launch, the plugin creates its config here:
 
 ```text
-server/game/csgo/addons/counterstrikesharp/configs/plugins/WallhackPlugin/WallhackPlugin.json
+server/game/csgo/addons/counterstrikesharp/configs/plugins/WallhackPluginCS2/WallhackPluginCS2.json
 ```
 
 Default example:

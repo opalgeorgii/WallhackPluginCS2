@@ -4,7 +4,7 @@ using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Utils;
 
-namespace WallhackPlugin;
+namespace WallhackPluginCS2;
 
 public static class Util
 {

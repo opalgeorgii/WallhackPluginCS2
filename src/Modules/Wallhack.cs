@@ -3,10 +3,10 @@ using System.Linq;
 using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Utils;
-using WallhackPlugin.Commands;
-using WallhackPlugin.Models;
+using WallhackPluginCS2.Commands;
+using WallhackPluginCS2.Models;
 
-namespace WallhackPlugin.Modules;
+namespace WallhackPluginCS2.Modules;
 
 public class Wallhack
 {

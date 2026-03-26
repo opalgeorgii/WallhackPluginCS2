@@ -1,4 +1,4 @@
-namespace WallhackPlugin.Models;
+namespace WallhackPluginCS2.Models;
 
 public struct SoundData
 {

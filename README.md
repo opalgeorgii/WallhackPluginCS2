@@ -4,13 +4,15 @@
 
 ## Overview
 
-This plugin recreates the **1 vs 5 wallhack** and **Invisible** style gameplay for **Counter-Strike 2**, inspired by videos from **dima_wallhacks**.
+This plugin recreates the **1 vs 5 Wallhack** and **Invisible** style gameplay for **Counter-Strike 2**, inspired by videos from **dima_wallhacks**.
 
-This project was heavily inspired by the original [FunnyPlugin](https://github.com/robieless/FunnyPlugin), but it was significantly reworked and fixed so that **wallhack** and **invisibility** work as intended, **RCON** works properly, and the overall plugin is more stable, cleaner, and easier to use.
+This project was heavily inspired by the original [FunnyPlugin](https://github.com/robieless/FunnyPlugin), but it was significantly reworked and fixed so that **wallhack** and **invisibility** work as intended, **RCON** works properly, and the plugin overall is more stable, cleaner, and easier to use.
 
-For a full CS2 server installation guide, please visit my other repository: [CS2ConfigCopier](https://github.com/opalgeorgii/CS2ConfigCopier)
+### You can download the latest version here: [Releases](https://github.com/opalgeorgii/WallhackPluginCS2/releases)
 
----
+### You can view the screenshots here: [Screenshots](#screenshots)
+
+### For a full CS2 server installation guide, please visit my other repository: [CS2ConfigCopier](https://github.com/opalgeorgii/CS2ConfigCopier#cs2-server-installation)
 
 ## Main improvements and fixes
 
@@ -18,7 +20,7 @@ Compared to the original inspiration, this version includes major fixes and rewo
 
 - fixed and reworked **Wallhack**
 - fixed and reworked **Invisibility**
-- invisible players no longer cast their player-model shadows for other players
+- invisible players no longer cast player-model shadows for other players
 - invisible players no longer expose their world weapons, grenades, knives, or related world rendering to other players
 - wallhack correctly reveals invisible enemies only for a limited time when they make a sound
 - fixed **RCON**, which previously was not working correctly
@@ -28,8 +30,6 @@ Compared to the original inspiration, this version includes major fixes and rewo
   - partial name matching
   - better permission handling
 - improved overall structure, stability, and usability
-
----
 
 ## Installation
 
@@ -44,9 +44,7 @@ server/game/csgo/addons/counterstrikesharp/plugins/WallhackPluginCS2
 4. If the `WallhackPluginCS2` folder does not exist, create it manually.
 5. Launch the server once so the plugin generates its config.
 
-For a full server installation and setup guide, please visit: [CS2ConfigCopier](https://github.com/opalgeorgii/CS2ConfigCopier)
-
----
+For a full server installation and setup guide, please visit: [CS2ConfigCopier](https://github.com/opalgeorgii/CS2ConfigCopier#cs2-server-installation)
 
 ## Admin setup
 
@@ -62,10 +60,7 @@ Example:
 {
   "playername": {
     "identity": "steamid",
-    "flags": [
-      "@css/generic",
-      "@css/rcon"
-    ]
+    "flags": ["@css/generic", "@css/rcon"]
   }
 }
 ```
@@ -85,8 +80,6 @@ By default:
   - `!rcon`
 
 You can change these permission strings later in the plugin config without recompiling the code.
-
----
 
 ## Commands
 
@@ -114,7 +107,7 @@ If multiple players match the same partial name, type more letters until it beco
 - `!invis <playername>`
 - `!invisible <playername>`
 
-You can also use a **partial player name** the same way as wallhack.
+You can also use a **partial player name** the same way as with wallhack.
 
 Example:
 
@@ -147,8 +140,6 @@ Example:
 ```text
 !rcon mp_warmup_end
 ```
-
----
 
 ## Configuration
 
@@ -183,8 +174,6 @@ You can change the wallhack glow color by editing:
 
 You do **not** need to recompile the code to change these values.
 
----
-
 ## Notes
 
 - The plugin supports partial name matching for player-based commands.
@@ -196,7 +185,27 @@ You do **not** need to recompile the code to change these values.
 hud_showtargetid 0
 ```
 
----
+## Screenshots
+
+### Wallhack
+
+![Wallhack](screenshots/wallhack.jpg)
+
+Shows a wallhack example.
+
+### Invisibility
+
+![Invisibility](screenshots/invisible.jpg)
+
+Shows an invisibility example.
+
+![rcon](screenshots/rcon.jpg)
+
+Shows a \!rcon` example.`
+
+![money](screenshots/money.jpg)
+
+Shows a \!money` example.`
 
 ## Support
 
@@ -204,14 +213,16 @@ If you wish to support me, you can donate here:
 
 **[Donate via Donatello](https://donatello.to/opalgeorgii)**
 
----
-
 ## Credits
 
 - Original inspiration: [robieless/FunnyPlugin](https://github.com/robieless/FunnyPlugin)
-- Server setup guide: [opalgeorgii/CS2ConfigCopier](https://github.com/opalgeorgii/CS2ConfigCopier)
+- Server setup guide: [opalgeorgii/CS2ConfigCopier](https://github.com/opalgeorgii/CS2ConfigCopier#cs2-server-installation)
 
----
+## Related Project
+
+For my Counter-Strike 2 automatic config copier, see:
+
+- [CS2ConfigCopier](https://github.com/opalgeorgii/CS2ConfigCopier)
 
 ## Contact
 

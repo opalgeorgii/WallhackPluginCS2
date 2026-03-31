@@ -189,23 +189,15 @@ hud_showtargetid 0
 
 ### Wallhack
 
-![Wallhack](screenshots/wallhack.jpg)
-
-Shows a wallhack example.
+![Wallhack](screenshots/wh.gif)
 
 ### Invisibility
 
-![Invisibility](screenshots/invisible.jpg)
+![Invisibility](screenshots/invis.gif)
 
-Shows an invisibility example.
+### Rcon and money commands
 
-![rcon](screenshots/rcon.jpg)
-
-Shows a \!rcon` example.`
-
-![money](screenshots/money.jpg)
-
-Shows a \!money` example.`
+![rcon+money](screenshots/rcon+money.gif)
 
 ## Support
 

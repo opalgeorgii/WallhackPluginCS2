@@ -195,7 +195,7 @@ hud_showtargetid 0
 
 ![Invisibility](screenshots/invis.gif)
 
-### Rcon and money commands
+### Rcon/money commands
 
 ![rcon+money](screenshots/rcon+money.gif)
 
